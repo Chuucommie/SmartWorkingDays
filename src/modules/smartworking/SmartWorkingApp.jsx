@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { SW_DAYS_MAP, OFFICE_DAYS_MAP, generateAllPermutations } from './smartworking.js'
 
 const DAY_LABELS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven']
@@ -276,12 +277,25 @@ function App() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-[11px] text-[#8E8E93] mt-5 opacity-50">
-          SmartWorkingDays v2 · IgelDev
-        </p>
+        <div className="mt-5 space-y-2">
+          <div className="flex justify-center gap-4 flex-wrap">
+            <Link to="/smartworking/team" className="sw-nav-link">
+              👥 Vedi team
+            </Link>
+            <Link to="/smartworking/saved" className="sw-nav-link">
+              💾 Combinazioni salvate
+            </Link>
+            <Link to="/" className="sw-nav-link">
+              ⏱️ Dashboard
+            </Link>
+          </div>
+          <p className="text-center text-[11px] text-[#8E8E93] opacity-50">
+            SmartWorkingDays v3 · IgelDev
+          </p>
+        </div>
       </div>
     </div>
   )
 }
 
-export default App
+export default SmartWorkingApp

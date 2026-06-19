@@ -20,6 +20,7 @@ function App() {
   const [dayStates, setDayStates] = useState(['free', 'free', 'free', 'free', 'free'])
   const [selectedPerm, setSelectedPerm] = useState(null) // indice permutazione selezionata
   const [animating, setAnimating] = useState(false)
+  const [showAll, setShowAll] = useState(false) // toggle per mostrare anche le non valide
 
   // Cicla stato al click
   const cycleState = (index) => {
@@ -188,30 +189,45 @@ function App() {
             <div>
               <div className="flex items-center justify-between mb-3">
                 <p className="text-[12px] font-medium text-[#8E8E93] uppercase tracking-[0.5px]">
-                  Tutte le combinazioni
+                  Combinazioni
                 </p>
-                <span className="text-[12px] font-medium">
-                  <span className="text-[#34C759]">{validCount} valide</span>
-                  <span className="text-[#8E8E93]"> / {permutations.length} totali</span>
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[12px] font-medium">
+                    <span className="text-[#34C759]">{validCount} valide</span>
+                    {showAll && (
+                      <span className="text-[#8E8E93]"> / {permutations.length} totali</span>
+                    )}
+                  </span>
+                  {permutations.length > validCount && (
+                    <button
+                      onClick={() => setShowAll(s => !s)}
+                      className="text-[11px] px-2 py-1 rounded-full border border-[#E5E5EA] text-[#8E8E93] hover:bg-[#F2F2F7] transition-colors"
+                    >
+                      {showAll ? 'Solo valide' : `+${permutations.length - validCount} non valide`}
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
-                {permutations.map((perm, pIdx) => (
+                {(showAll ? permutations : permutations.filter(p => p.valid)).map((perm, pIdx) => {
+                  // Trova l'indice originale nella lista completa per mantenere la numerazione
+                  const origIdx = permutations.indexOf(perm)
+                  return (
                   <button
-                    key={pIdx}
-                    onClick={() => perm.valid && setSelectedPerm(pIdx === selectedPerm ? null : pIdx)}
+                    key={origIdx}
+                    onClick={() => perm.valid && setSelectedPerm(origIdx === selectedPerm ? null : origIdx)}
                     disabled={!perm.valid}
                     className={`
                       perm-row w-full px-4 py-3
                       flex items-center justify-between gap-2
                       ${!perm.valid ? 'opacity-40 cursor-not-allowed' : ''}
-                      ${pIdx === selectedPerm ? 'selected' : ''}
+                      ${origIdx === selectedPerm ? 'selected' : ''}
                     `}
                     title={perm.valid ? 'Valida — clicca per selezionare' : 'Non valida: non rispetta la regola del 60%'}
                   >
                     <span className="text-[11px] text-[#8E8E93] font-medium w-5 text-left">
-                      {pIdx + 1}
+                      {origIdx + 1}
                     </span>
                     <div className="flex gap-1.5 flex-1 justify-center">
                       {perm.week.map((state, i) => (
@@ -226,7 +242,7 @@ function App() {
                       <span className={perm.valid ? 'text-[#0056B3] font-medium' : 'text-[#8E8E93]'}>🏢{perm.totalOffice}</span>
                     </div>
                     {perm.valid ? (
-                      pIdx === selectedPerm ? (
+                      origIdx === selectedPerm ? (
                         <span className="text-[#34C759] text-sm">✓</span>
                       ) : (
                         <span className="text-[#34C759] text-[10px] opacity-60">valida</span>
@@ -235,7 +251,7 @@ function App() {
                       <span className="text-[#8E8E93] text-[10px]">✗</span>
                     )}
                   </button>
-                ))}
+                )})}
               </div>
             </div>
           )}

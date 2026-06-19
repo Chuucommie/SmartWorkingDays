@@ -16,22 +16,8 @@ const STATES = {
 }
 const STATE_ORDER = ['free', 'sw', 'office', 'absent']
 
-// Genera tutte le combinazioni C(n, k) — indici
-function combinations(n, k) {
-  const result = []
-  function backtrack(start, combo) {
-    if (combo.length === k) { result.push([...combo]); return }
-    for (let i = start; i < n; i++) {
-      combo.push(i)
-      backtrack(i + 1, combo)
-      combo.pop()
-    }
-  }
-  backtrack(0, [])
-  return result
-}
-
-// Genera tutte le permutazioni valide della settimana
+// Genera TUTTE le 2^k combinazioni per i giorni liberi, poi filtra con la regola 60%
+// Per target frazionari (2.5, 1.5) usa floor/ceil come tolleranza
 function generatePermutations(dayStates, swTarget, officeTarget) {
   const freeIndices = []
   let fixedSW = 0
@@ -43,28 +29,50 @@ function generatePermutations(dayStates, swTarget, officeTarget) {
     else if (state === 'free') freeIndices.push(i)
   })
 
-  const neededSW = swTarget - fixedSW
-  const neededOffice = officeTarget - fixedOffice
+  const k = freeIndices.length
 
-  // Se i vincoli superano i target, nessuna permutazione
-  if (neededSW < 0 || neededOffice < 0) return []
-  // Se i giorni liberi non bastano
-  if (freeIndices.length !== neededSW + neededOffice) return []
+  // Nessun giorno libero: verifica se i vincoli già soddisfano i target
+  if (k === 0) {
+    const totalSW = fixedSW
+    const totalOffice = fixedOffice
+    const swOk = totalSW >= Math.floor(swTarget) && totalSW <= Math.ceil(swTarget)
+    const officeOk = totalOffice >= Math.floor(officeTarget) && totalOffice <= Math.ceil(officeTarget)
+    return swOk && officeOk ? [{ week: [...dayStates], totalSW, totalOffice }] : []
+  }
 
-  // Genera tutte le combinazioni di posizioni per SW tra i giorni liberi
-  const combos = combinations(freeIndices.length, neededSW)
+  const totalCombos = 1 << k // 2^k
+  const all = []
 
-  return combos.map(combo => {
-    // Crea array settimana: parte dai vincoli, poi riempi i liberi
+  // Genera tutte le 2^k combinazioni per i giorni liberi
+  for (let mask = 0; mask < totalCombos; mask++) {
     const week = [...dayStates]
-    const swSet = new Set(combo.map(i => freeIndices[i]))
+    let assignedSW = 0
+    let assignedOffice = 0
 
-    freeIndices.forEach((dayIdx, i) => {
-      week[dayIdx] = swSet.has(i) ? 'sw' : 'office'
-    })
+    for (let bit = 0; bit < k; bit++) {
+      const dayIdx = freeIndices[bit]
+      if (mask & (1 << bit)) {
+        week[dayIdx] = 'sw'
+        assignedSW++
+      } else {
+        week[dayIdx] = 'office'
+        assignedOffice++
+      }
+    }
 
-    return week
-  })
+    const totalSW = fixedSW + assignedSW
+    const totalOffice = fixedOffice + assignedOffice
+
+    // Filtro: SW e Office devono rientrare nei range [floor, ceil] del target
+    const swOk = totalSW >= Math.floor(swTarget) && totalSW <= Math.ceil(swTarget)
+    const officeOk = totalOffice >= Math.floor(officeTarget) && totalOffice <= Math.ceil(officeTarget)
+
+    if (swOk && officeOk) {
+      all.push({ week, totalSW, totalOffice })
+    }
+  }
+
+  return all
 }
 
 function App() {
@@ -246,7 +254,7 @@ function App() {
               </div>
 
               <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
-                {permutations.map((week, pIdx) => (
+                {permutations.map((perm, pIdx) => (
                   <button
                     key={pIdx}
                     onClick={() => setSelectedPerm(pIdx === selectedPerm ? null : pIdx)}
@@ -260,11 +268,16 @@ function App() {
                       {pIdx + 1}
                     </span>
                     <div className="flex gap-1.5 flex-1 justify-center">
-                      {week.map((state, i) => (
+                      {perm.week.map((state, i) => (
                         <span key={i} className={`mini-pill ${state}`}>
                           {STATES[state].icon} {DAY_LABELS[i]}
                         </span>
                       ))}
+                    </div>
+                    <div className="flex items-center gap-1 text-[11px]">
+                      <span className="text-[#248A3D] font-medium">🏠{perm.totalSW}</span>
+                      <span className="text-[#8E8E93]">·</span>
+                      <span className="text-[#0056B3] font-medium">🏢{perm.totalOffice}</span>
                     </div>
                     {pIdx === selectedPerm && (
                       <span className="text-[#34C759] text-sm">✓</span>
@@ -279,9 +292,9 @@ function App() {
           {permutations.length === 0 && workedCount > 0 && (
             <div className="text-center py-4">
               <p className="text-[13px] text-[#8E8E93]">
-                {dayStates.filter(s => s === 'sw').length > swTarget
+                {dayStates.filter(s => s === 'sw').length > Math.ceil(swTarget)
                   ? '⚠️ Troppi giorni fissati in Smart Working'
-                  : dayStates.filter(s => s === 'office').length > officeTarget
+                  : dayStates.filter(s => s === 'office').length > Math.ceil(officeTarget)
                   ? '⚠️ Troppi giorni fissati in Ufficio'
                   : 'Nessuna combinazione valida con questi vincoli'}
               </p>

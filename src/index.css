@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+@theme {
+  --color-apple-green: #34C759;
+  --color-apple-green-dark: #248A3D;
+  --color-apple-green-light: #30D158;
+  --color-apple-bg: #F2F2F7;
+  --color-apple-card: rgba(255, 255, 255, 0.72);
+  --color-apple-text: #1C1C1E;
+  --color-apple-text-secondary: #8E8E93;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #F2F2F7;
+  min-height: 100vh;
+}
+
+/* Glass card effect */
+.glass-card {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+/* Pill button */
+.pill-btn {
+  border-radius: 9999px;
+  font-weight: 500;
+  letter-spacing: -0.2px;
+  transition: all 0.2s ease;
+}
+.pill-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(52, 199, 89, 0.3);
+}
+.pill-btn:active {
+  transform: translateY(0);
+}
+
+/* Pill input */
+.pill-input {
+  border-radius: 9999px;
+  border: 1.5px solid rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.8);
+  transition: all 0.2s ease;
+}
+.pill-input:focus {
+  outline: none;
+  border-color: #34C759;
+  box-shadow: 0 0 0 3px rgba(52, 199, 89, 0.15);
+}
+
+/* Result pill */
+.result-pill {
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #34C759 0%, #248A3D 100%);
+  box-shadow: 0 4px 20px rgba(52, 199, 89, 0.25);
+}
+
+/* Day selector pills */
+.day-pill {
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+.day-pill:hover {
+  border-color: rgba(52, 199, 89, 0.3);
+  background: rgba(52, 199, 89, 0.05);
+}
+.day-pill.active {
+  border-color: #34C759;
+  background: rgba(52, 199, 89, 0.1);
+  box-shadow: 0 2px 12px rgba(52, 199, 89, 0.15);
+}
+
+/* Animated number */
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-count {
+  animation: countUp 0.4s ease-out;
+}

@@ -1,159 +1,302 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 
-// Mappatura esatta degli arrotondamenti come da specifiche
-const SW_DAYS_MAP = {
-  5: 3.0,
-  4: 2.5,
-  3: 2.0,
-  2: 1.0,
-  1: 0.0,
-  0: 0.0,
-}
+// Mappatura giorni SW spettanti in base ai giorni effettivamente lavorati
+const SW_DAYS_MAP = { 5: 3.0, 4: 2.5, 3: 2.0, 2: 1.0, 1: 0.0, 0: 0.0 }
+const OFFICE_DAYS_MAP = { 5: 2.0, 4: 1.5, 3: 1.0, 2: 1.0, 1: 1.0, 0: 0.0 }
 
 const DAY_LABELS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven']
+const DAY_LABELS_FULL = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì']
+
+// Stati possibili per ogni giorno
+const STATES = {
+  free:      { label: 'Libero',   icon: '◌', cls: 'state-free',   dot: '' },
+  sw:        { label: 'SW Fisso', icon: '🏠', cls: 'state-sw',     dot: 'sw' },
+  office:    { label: 'Ufficio',  icon: '🏢', cls: 'state-office', dot: 'office' },
+  absent:    { label: 'Assenza',  icon: '✕', cls: 'state-absent', dot: 'absent' },
+}
+const STATE_ORDER = ['free', 'sw', 'office', 'absent']
+
+// Genera tutte le combinazioni C(n, k) — indici
+function combinations(n, k) {
+  const result = []
+  function backtrack(start, combo) {
+    if (combo.length === k) { result.push([...combo]); return }
+    for (let i = start; i < n; i++) {
+      combo.push(i)
+      backtrack(i + 1, combo)
+      combo.pop()
+    }
+  }
+  backtrack(0, [])
+  return result
+}
+
+// Genera tutte le permutazioni valide della settimana
+function generatePermutations(dayStates, swTarget, officeTarget) {
+  const freeIndices = []
+  let fixedSW = 0
+  let fixedOffice = 0
+
+  dayStates.forEach((state, i) => {
+    if (state === 'sw') fixedSW++
+    else if (state === 'office') fixedOffice++
+    else if (state === 'free') freeIndices.push(i)
+  })
+
+  const neededSW = swTarget - fixedSW
+  const neededOffice = officeTarget - fixedOffice
+
+  // Se i vincoli superano i target, nessuna permutazione
+  if (neededSW < 0 || neededOffice < 0) return []
+  // Se i giorni liberi non bastano
+  if (freeIndices.length !== neededSW + neededOffice) return []
+
+  // Genera tutte le combinazioni di posizioni per SW tra i giorni liberi
+  const combos = combinations(freeIndices.length, neededSW)
+
+  return combos.map(combo => {
+    // Crea array settimana: parte dai vincoli, poi riempi i liberi
+    const week = [...dayStates]
+    const swSet = new Set(combo.map(i => freeIndices[i]))
+
+    freeIndices.forEach((dayIdx, i) => {
+      week[dayIdx] = swSet.has(i) ? 'sw' : 'office'
+    })
+
+    return week
+  })
+}
 
 function App() {
-  const [workedDays, setWorkedDays] = useState([true, true, true, true, true])
-  const [swDays, setSwDays] = useState(3.0)
+  // Stato: array di 5 elementi con 'free' | 'sw' | 'office' | 'absent'
+  const [dayStates, setDayStates] = useState(['free', 'free', 'free', 'free', 'free'])
+  const [selectedPerm, setSelectedPerm] = useState(null) // indice permutazione selezionata
   const [animating, setAnimating] = useState(false)
 
-  const countWorked = () => workedDays.filter(Boolean).length
-
-  const toggleDay = (index) => {
-    const next = [...workedDays]
-    next[index] = !next[index]
-    setWorkedDays(next)
+  // Cicla stato al click
+  const cycleState = (index) => {
+    setDayStates(prev => {
+      const next = [...prev]
+      const currentIdx = STATE_ORDER.indexOf(next[index])
+      next[index] = STATE_ORDER[(currentIdx + 1) % STATE_ORDER.length]
+      return next
+    })
+    setSelectedPerm(null)
   }
 
-  useEffect(() => {
-    const count = countWorked()
-    const result = SW_DAYS_MAP[count] ?? 0
-    setAnimating(true)
-    setSwDays(result)
-    const timer = setTimeout(() => setAnimating(false), 400)
-    return () => clearTimeout(timer)
-  }, [workedDays])
+  // Calcoli derivati
+  const workedCount = dayStates.filter(s => s !== 'absent').length
+  const swTarget = SW_DAYS_MAP[workedCount] ?? 0
+  const officeTarget = OFFICE_DAYS_MAP[workedCount] ?? 0
 
-  const workedCount = countWorked()
+  // Genera permutazioni
+  const permutations = useMemo(
+    () => generatePermutations(dayStates, swTarget, officeTarget),
+    [dayStates, swTarget, officeTarget]
+  )
+
+  // Animazione al cambio
+  useEffect(() => {
+    setAnimating(true)
+    const t = setTimeout(() => setAnimating(false), 400)
+    return () => clearTimeout(t)
+  }, [swTarget])
+
   const theoretical = (workedCount * 0.6).toFixed(1)
 
+  // Descrizione arrotondamento
+  const roundNote = (() => {
+    if (workedCount === 4) return '↑ 2.4 → 2.5'
+    if (workedCount === 3) return '↑ 1.8 → 2.0'
+    if (workedCount === 2) return '↓ 1.2 → 1.0'
+    if (workedCount === 1) return '↓ 0.6 → 0.0'
+    return '—'
+  })()
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 sm:p-8"
+    <div className="min-h-screen flex items-start justify-center p-4 sm:p-8 pt-8 sm:pt-12"
          style={{ background: 'linear-gradient(180deg, #F2F2F7 0%, #E8E8ED 50%, #F2F2F7 100%)' }}>
-      
+
       {/* Subtle background pattern */}
-      <div className="fixed inset-0 pointer-events-none opacity-[0.03]"
+      <div className="fixed inset-0 pointer-events-none opacity-[0.025]"
            style={{
-             backgroundImage: 'radial-gradient(circle at 25% 25%, #34C759 1px, transparent 1px), radial-gradient(circle at 75% 75%, #34C759 1px, transparent 1px)',
+             backgroundImage: 'radial-gradient(circle at 25% 25%, #34C759 1px, transparent 1px), radial-gradient(circle at 75% 75%, #007AFF 1px, transparent 1px)',
              backgroundSize: '60px 60px'
            }} />
 
-      <div className="relative w-full max-w-[420px]">
-        
+      <div className="relative w-full max-w-[480px]">
+
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-[28px] mb-4"
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-[24px] mb-3"
                style={{ background: 'linear-gradient(135deg, #34C759 0%, #30D158 50%, #248A3D 100%)',
-                        boxShadow: '0 8px 24px rgba(52,199,89,0.25)' }}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        boxShadow: '0 6px 20px rgba(52,199,89,0.22)' }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-              <line x1="16" y1="2" x2="16" y2="6"/>
-              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
               <line x1="3" y1="10" x2="21" y2="10"/>
-              <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/>
             </svg>
           </div>
-          <h1 className="text-[28px] font-semibold tracking-[-0.5px] text-[#1C1C1E] mb-1">
+          <h1 className="text-[26px] font-semibold tracking-[-0.5px] text-[#1C1C1E] mb-1">
             Smart Working
           </h1>
-          <p className="text-[15px] text-[#8E8E93] font-normal">
-            Calcola i giorni di lavoro da remoto
+          <p className="text-[14px] text-[#8E8E93] font-normal">
+            Configura i vincoli e scegli la tua settimana
           </p>
         </div>
 
         {/* Main Card */}
-        <div className="glass-card rounded-[32px] p-6 sm:p-8">
-          
-          {/* Day Selector */}
-          <div className="mb-8">
-            <p className="text-[13px] font-medium text-[#8E8E93] uppercase tracking-[0.5px] mb-4 text-center">
-              Giorni in ufficio questa settimana
-            </p>
-            <div className="flex justify-center gap-2 sm:gap-3">
-              {DAY_LABELS.map((label, i) => (
-                <button
-                  key={label}
-                  onClick={() => toggleDay(i)}
-                  className={`
-                    day-pill w-[52px] h-[52px] sm:w-[60px] sm:h-[60px]
-                    flex flex-col items-center justify-center
-                    text-sm font-medium
-                    ${workedDays[i] 
-                      ? 'active bg-white/80 text-[#1C1C1E]' 
-                      : 'bg-transparent text-[#8E8E93]'}
-                  `}
-                >
-                  <span className="text-[11px] sm:text-xs opacity-60 mb-0.5">
-                    {workedDays[i] ? '🏢' : '🏠'}
-                  </span>
-                  {label}
-                </button>
-              ))}
+        <div className="glass-card rounded-[28px] p-5 sm:p-7">
+
+          {/* ── Selettore Giorni ── */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[12px] font-medium text-[#8E8E93] uppercase tracking-[0.5px]">
+                Configura settimana
+              </p>
+              <span className="text-[12px] text-[#8E8E93]">
+                clicca per cambiare stato
+              </span>
             </div>
-            <p className="text-center text-[13px] text-[#8E8E93] mt-3">
-              {workedCount} {workedCount === 1 ? 'giorno' : 'giorni'} in ufficio
-            </p>
+
+            {/* Day pills */}
+            <div className="flex justify-center gap-2 sm:gap-2.5">
+              {DAY_LABELS.map((label, i) => {
+                const state = dayStates[i]
+                const cfg = STATES[state]
+                return (
+                  <button
+                    key={label}
+                    onClick={() => cycleState(i)}
+                    className={`
+                      day-pill ${cfg.cls}
+                      w-[56px] h-[64px] sm:w-[64px] sm:h-[72px]
+                      flex flex-col items-center justify-center gap-1
+                      text-xs sm:text-sm font-medium
+                    `}
+                    title={`${DAY_LABELS_FULL[i]}: ${cfg.label}`}
+                  >
+                    {cfg.dot && <span className={`state-dot ${cfg.dot}`} />}
+                    <span className="text-base sm:text-lg leading-none">{cfg.icon}</span>
+                    <span className="text-[11px] sm:text-xs leading-none">{label}</span>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Legend */}
+            <div className="flex justify-center gap-3 mt-3 flex-wrap">
+              <span className="legend-pill sw">🏠 SW</span>
+              <span className="legend-pill office">🏢 Ufficio</span>
+              <span className="legend-pill absent">✕ Assenza</span>
+              <span className="text-[11px] text-[#8E8E93] self-center">◌ Libero</span>
+            </div>
           </div>
 
           {/* Divider */}
-          <div className="h-px bg-gradient-to-r from-transparent via-[#E5E5EA] to-transparent mb-8" />
+          <div className="h-px bg-gradient-to-r from-transparent via-[#E5E5EA] to-transparent mb-5" />
 
-          {/* Calculation Details */}
-          <div className="space-y-3 mb-8">
-            <div className="flex justify-between items-center px-2">
-              <span className="text-[15px] text-[#8E8E93]">Giorni lavorati</span>
-              <span className="text-[15px] font-medium text-[#1C1C1E]">{workedCount}/5</span>
+          {/* ── Riepilogo Calcolo ── */}
+          <div className="space-y-2 mb-5 px-1">
+            <div className="flex justify-between items-center">
+              <span className="text-[14px] text-[#8E8E93]">Giorni lavorati</span>
+              <span className="text-[14px] font-medium text-[#1C1C1E]">{workedCount}/5</span>
             </div>
-            <div className="flex justify-between items-center px-2">
-              <span className="text-[15px] text-[#8E8E93]">Percentuale SW (60%)</span>
-              <span className="text-[15px] font-medium text-[#1C1C1E]">{theoretical} giorni</span>
+            <div className="flex justify-between items-center">
+              <span className="text-[14px] text-[#8E8E93]">Percentuale SW (60%)</span>
+              <span className="text-[14px] font-medium text-[#1C1C1E]">{theoretical} giorni</span>
             </div>
-            <div className="flex justify-between items-center px-2">
-              <span className="text-[15px] text-[#8E8E93]">Arrotondamento</span>
-              <span className="text-[13px] text-[#34C759] font-medium">
-                {workedCount === 4 ? '↑ 2.4 → 2.5' : 
-                 workedCount === 3 ? '↑ 1.8 → 2.0' : 
-                 workedCount === 2 ? '↓ 1.2 → 1.0' : 
-                 workedCount === 1 ? '↓ 0.6 → 0.0' : '—'}
-              </span>
+            {roundNote !== '—' && (
+              <div className="flex justify-between items-center">
+                <span className="text-[14px] text-[#8E8E93]">Arrotondamento</span>
+                <span className="text-[13px] text-[#34C759] font-medium">{roundNote}</span>
+              </div>
+            )}
+          </div>
+
+          {/* ── Result Pill ── */}
+          <div className="result-pill px-6 py-4 text-center mb-5">
+            <div className="flex justify-center gap-6">
+              <div>
+                <p className="text-[11px] font-medium text-white/60 uppercase tracking-[0.5px]">Smart Working</p>
+                <p className={`text-[36px] font-bold text-white leading-none tracking-[-0.5px] ${animating ? 'animate-count' : ''}`}>
+                  {swTarget.toFixed(1)}
+                </p>
+              </div>
+              <div className="w-px bg-white/20" />
+              <div>
+                <p className="text-[11px] font-medium text-white/60 uppercase tracking-[0.5px]">Ufficio</p>
+                <p className={`text-[36px] font-bold text-white leading-none tracking-[-0.5px] ${animating ? 'animate-count' : ''}`}>
+                  {officeTarget.toFixed(1)}
+                </p>
+              </div>
             </div>
           </div>
 
-          {/* Result */}
-          <div className="result-pill px-8 py-5 text-center">
-            <p className="text-[13px] font-medium text-white/70 uppercase tracking-[0.5px] mb-1">
-              Giorni Smart Working
-            </p>
-            <p className={`text-[48px] font-bold text-white leading-none tracking-[-1px] ${animating ? 'animate-count' : ''}`}>
-              {swDays.toFixed(1)}
-            </p>
-            <p className="text-[15px] text-white/80 mt-1">
-              {swDays === 0 ? 'Nessun giorno disponibile' :
-               swDays === 1 ? '1 giorno da remoto' :
-               `${swDays.toFixed(1)} giorni da remoto`}
-            </p>
-          </div>
+          {/* ── Permutazioni ── */}
+          {permutations.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[12px] font-medium text-[#8E8E93] uppercase tracking-[0.5px]">
+                  Combinazioni possibili
+                </p>
+                <span className="text-[12px] text-[#34C759] font-medium">
+                  {permutations.length} {permutations.length === 1 ? 'opzione' : 'opzioni'}
+                </span>
+              </div>
+
+              <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
+                {permutations.map((week, pIdx) => (
+                  <button
+                    key={pIdx}
+                    onClick={() => setSelectedPerm(pIdx === selectedPerm ? null : pIdx)}
+                    className={`
+                      perm-row w-full px-4 py-3
+                      flex items-center justify-between gap-2
+                      ${pIdx === selectedPerm ? 'selected' : ''}
+                    `}
+                  >
+                    <span className="text-[11px] text-[#8E8E93] font-medium w-5 text-left">
+                      {pIdx + 1}
+                    </span>
+                    <div className="flex gap-1.5 flex-1 justify-center">
+                      {week.map((state, i) => (
+                        <span key={i} className={`mini-pill ${state}`}>
+                          {STATES[state].icon} {DAY_LABELS[i]}
+                        </span>
+                      ))}
+                    </div>
+                    {pIdx === selectedPerm && (
+                      <span className="text-[#34C759] text-sm">✓</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Nessuna permutazione */}
+          {permutations.length === 0 && workedCount > 0 && (
+            <div className="text-center py-4">
+              <p className="text-[13px] text-[#8E8E93]">
+                {dayStates.filter(s => s === 'sw').length > swTarget
+                  ? '⚠️ Troppi giorni fissati in Smart Working'
+                  : dayStates.filter(s => s === 'office').length > officeTarget
+                  ? '⚠️ Troppi giorni fissati in Ufficio'
+                  : 'Nessuna combinazione valida con questi vincoli'}
+              </p>
+            </div>
+          )}
 
           {/* Info note */}
-          <p className="text-center text-[12px] text-[#8E8E93] mt-5 leading-relaxed">
-            Basato sull'accordo aziendale del 60% delle ore lavorate,<br/>
-            con arrotondamenti specifici per ogni scenario.
+          <p className="text-center text-[11px] text-[#8E8E93] mt-4 leading-relaxed">
+            Basato sull'accordo aziendale del 60% delle ore lavorate
           </p>
         </div>
 
         {/* Footer */}
-        <p className="text-center text-[12px] text-[#8E8E93] mt-6 opacity-60">
-          SmartWorkingDays · v1.0
+        <p className="text-center text-[11px] text-[#8E8E93] mt-5 opacity-50">
+          SmartWorkingDays v2 · IgelDev
         </p>
       </div>
     </div>

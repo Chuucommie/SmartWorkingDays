@@ -4,6 +4,11 @@
   --color-apple-green: #34C759;
   --color-apple-green-dark: #248A3D;
   --color-apple-green-light: #30D158;
+  --color-apple-blue: #007AFF;
+  --color-apple-blue-dark: #0056B3;
+  --color-apple-blue-light: #409CFF;
+  --color-apple-gray: #8E8E93;
+  --color-apple-gray-light: #E5E5EA;
   --color-apple-bg: #F2F2F7;
   --color-apple-card: rgba(255, 255, 255, 0.72);
   --color-apple-text: #1C1C1E;
@@ -37,24 +42,81 @@ body {
 }
 .pill-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(52, 199, 89, 0.3);
 }
 .pill-btn:active {
   transform: translateY(0);
 }
 
-/* Pill input */
-.pill-input {
+/* Day selector pills - v2 with 4 states */
+.day-pill {
   border-radius: 9999px;
-  border: 1.5px solid rgba(0, 0, 0, 0.1);
-  background: rgba(255, 255, 255, 0.8);
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
+  cursor: pointer;
+  border: 2px solid transparent;
+  position: relative;
+  user-select: none;
 }
-.pill-input:focus {
-  outline: none;
+.day-pill:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.day-pill:active {
+  transform: translateY(0);
+}
+
+/* State: Libero (default) */
+.day-pill.state-free {
+  background: rgba(255,255,255,0.7);
+  border-color: rgba(0,0,0,0.08);
+  color: #8E8E93;
+}
+.day-pill.state-free:hover {
+  border-color: rgba(0,0,0,0.15);
+}
+
+/* State: SW Fisso (verde) */
+.day-pill.state-sw {
+  background: linear-gradient(135deg, rgba(52,199,89,0.12), rgba(40,167,69,0.08));
   border-color: #34C759;
-  box-shadow: 0 0 0 3px rgba(52, 199, 89, 0.15);
+  color: #248A3D;
+  box-shadow: 0 2px 10px rgba(52,199,89,0.12);
 }
+.day-pill.state-sw:hover {
+  box-shadow: 0 4px 16px rgba(52,199,89,0.2);
+}
+
+/* State: Ufficio Fisso (blu) */
+.day-pill.state-office {
+  background: linear-gradient(135deg, rgba(0,122,255,0.1), rgba(0,86,179,0.06));
+  border-color: #007AFF;
+  color: #0056B3;
+  box-shadow: 0 2px 10px rgba(0,122,255,0.1);
+}
+.day-pill.state-office:hover {
+  box-shadow: 0 4px 16px rgba(0,122,255,0.18);
+}
+
+/* State: Assenza (grigio) */
+.day-pill.state-absent {
+  background: rgba(142,142,147,0.1);
+  border-color: #C7C7CC;
+  color: #8E8E93;
+  opacity: 0.7;
+}
+.day-pill.state-absent:hover {
+  opacity: 0.85;
+}
+
+/* State indicator dot */
+.state-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  position: absolute;
+  top: 6px; right: 6px;
+}
+.state-dot.sw { background: #34C759; }
+.state-dot.office { background: #007AFF; }
+.state-dot.absent { background: #8E8E93; }
 
 /* Result pill */
 .result-pill {
@@ -63,21 +125,48 @@ body {
   box-shadow: 0 4px 20px rgba(52, 199, 89, 0.25);
 }
 
-/* Day selector pills */
-.day-pill {
+/* Permutation row */
+.perm-row {
   border-radius: 9999px;
   transition: all 0.2s ease;
   cursor: pointer;
-  border: 2px solid transparent;
+  border: 1.5px solid transparent;
+  background: rgba(255,255,255,0.6);
 }
-.day-pill:hover {
-  border-color: rgba(52, 199, 89, 0.3);
-  background: rgba(52, 199, 89, 0.05);
+.perm-row:hover {
+  border-color: rgba(52,199,89,0.3);
+  background: rgba(255,255,255,0.9);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
 }
-.day-pill.active {
+.perm-row.selected {
   border-color: #34C759;
-  background: rgba(52, 199, 89, 0.1);
-  box-shadow: 0 2px 12px rgba(52, 199, 89, 0.15);
+  background: rgba(52,199,89,0.06);
+  box-shadow: 0 2px 12px rgba(52,199,89,0.12);
+}
+
+/* Mini day pill in permutation */
+.mini-pill {
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 10px;
+  transition: all 0.15s ease;
+}
+.mini-pill.sw {
+  background: linear-gradient(135deg, rgba(52,199,89,0.15), rgba(40,167,69,0.08));
+  color: #248A3D;
+  border: 1px solid rgba(52,199,89,0.3);
+}
+.mini-pill.office {
+  background: linear-gradient(135deg, rgba(0,122,255,0.12), rgba(0,86,179,0.06));
+  color: #0056B3;
+  border: 1px solid rgba(0,122,255,0.25);
+}
+.mini-pill.absent {
+  background: rgba(142,142,147,0.08);
+  color: #8E8E93;
+  border: 1px solid rgba(142,142,147,0.2);
 }
 
 /* Animated number */
@@ -87,4 +176,27 @@ body {
 }
 .animate-count {
   animation: countUp 0.4s ease-out;
+}
+
+/* Legend pills */
+.legend-pill {
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 10px;
+}
+.legend-pill.sw {
+  background: rgba(52,199,89,0.1);
+  color: #248A3D;
+  border: 1px solid rgba(52,199,89,0.25);
+}
+.legend-pill.office {
+  background: rgba(0,122,255,0.08);
+  color: #0056B3;
+  border: 1px solid rgba(0,122,255,0.2);
+}
+.legend-pill.absent {
+  background: rgba(142,142,147,0.06);
+  color: #8E8E93;
+  border: 1px solid rgba(142,142,147,0.15);
 }

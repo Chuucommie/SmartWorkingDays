@@ -16,9 +16,9 @@ const STATES = {
 }
 const STATE_ORDER = ['free', 'sw', 'office', 'absent']
 
-// Genera TUTTE le 2^k combinazioni per i giorni liberi, poi filtra con la regola 60%
-// Per target frazionari (2.5, 1.5) usa floor/ceil come tolleranza
-function generatePermutations(dayStates, swTarget, officeTarget) {
+// Genera TUTTE le 2^k combinazioni per i giorni liberi.
+// Restituisce OGNI permutazione con flag `valid` (true se rispetta la regola 60%).
+function generateAllPermutations(dayStates, swTarget, officeTarget) {
   const freeIndices = []
   let fixedSW = 0
   let fixedOffice = 0
@@ -31,19 +31,18 @@ function generatePermutations(dayStates, swTarget, officeTarget) {
 
   const k = freeIndices.length
 
-  // Nessun giorno libero: verifica se i vincoli già soddisfano i target
+  // Nessun giorno libero: una sola permutazione (i vincoli già decisi)
   if (k === 0) {
     const totalSW = fixedSW
     const totalOffice = fixedOffice
     const swOk = totalSW >= Math.floor(swTarget) && totalSW <= Math.ceil(swTarget)
     const officeOk = totalOffice >= Math.floor(officeTarget) && totalOffice <= Math.ceil(officeTarget)
-    return swOk && officeOk ? [{ week: [...dayStates], totalSW, totalOffice }] : []
+    return [{ week: [...dayStates], totalSW, totalOffice, valid: swOk && officeOk }]
   }
 
   const totalCombos = 1 << k // 2^k
   const all = []
 
-  // Genera tutte le 2^k combinazioni per i giorni liberi
   for (let mask = 0; mask < totalCombos; mask++) {
     const week = [...dayStates]
     let assignedSW = 0
@@ -63,13 +62,10 @@ function generatePermutations(dayStates, swTarget, officeTarget) {
     const totalSW = fixedSW + assignedSW
     const totalOffice = fixedOffice + assignedOffice
 
-    // Filtro: SW e Office devono rientrare nei range [floor, ceil] del target
     const swOk = totalSW >= Math.floor(swTarget) && totalSW <= Math.ceil(swTarget)
     const officeOk = totalOffice >= Math.floor(officeTarget) && totalOffice <= Math.ceil(officeTarget)
 
-    if (swOk && officeOk) {
-      all.push({ week, totalSW, totalOffice })
-    }
+    all.push({ week, totalSW, totalOffice, valid: swOk && officeOk })
   }
 
   return all
@@ -99,9 +95,11 @@ function App() {
 
   // Genera permutazioni
   const permutations = useMemo(
-    () => generatePermutations(dayStates, swTarget, officeTarget),
+    () => generateAllPermutations(dayStates, swTarget, officeTarget),
     [dayStates, swTarget, officeTarget]
   )
+
+  const validCount = permutations.filter(p => p.valid).length
 
   // Animazione al cambio
   useEffect(() => {
@@ -246,23 +244,27 @@ function App() {
             <div>
               <div className="flex items-center justify-between mb-3">
                 <p className="text-[12px] font-medium text-[#8E8E93] uppercase tracking-[0.5px]">
-                  Combinazioni possibili
+                  Tutte le combinazioni
                 </p>
-                <span className="text-[12px] text-[#34C759] font-medium">
-                  {permutations.length} {permutations.length === 1 ? 'opzione' : 'opzioni'}
+                <span className="text-[12px] font-medium">
+                  <span className="text-[#34C759]">{validCount} valide</span>
+                  <span className="text-[#8E8E93]"> / {permutations.length} totali</span>
                 </span>
               </div>
 
-              <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
+              <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
                 {permutations.map((perm, pIdx) => (
                   <button
                     key={pIdx}
-                    onClick={() => setSelectedPerm(pIdx === selectedPerm ? null : pIdx)}
+                    onClick={() => perm.valid && setSelectedPerm(pIdx === selectedPerm ? null : pIdx)}
+                    disabled={!perm.valid}
                     className={`
                       perm-row w-full px-4 py-3
                       flex items-center justify-between gap-2
+                      ${!perm.valid ? 'opacity-40 cursor-not-allowed' : ''}
                       ${pIdx === selectedPerm ? 'selected' : ''}
                     `}
+                    title={perm.valid ? 'Valida — clicca per selezionare' : 'Non valida: non rispetta la regola del 60%'}
                   >
                     <span className="text-[11px] text-[#8E8E93] font-medium w-5 text-left">
                       {pIdx + 1}
@@ -275,12 +277,18 @@ function App() {
                       ))}
                     </div>
                     <div className="flex items-center gap-1 text-[11px]">
-                      <span className="text-[#248A3D] font-medium">🏠{perm.totalSW}</span>
+                      <span className={perm.valid ? 'text-[#248A3D] font-medium' : 'text-[#8E8E93]'}>🏠{perm.totalSW}</span>
                       <span className="text-[#8E8E93]">·</span>
-                      <span className="text-[#0056B3] font-medium">🏢{perm.totalOffice}</span>
+                      <span className={perm.valid ? 'text-[#0056B3] font-medium' : 'text-[#8E8E93]'}>🏢{perm.totalOffice}</span>
                     </div>
-                    {pIdx === selectedPerm && (
-                      <span className="text-[#34C759] text-sm">✓</span>
+                    {perm.valid ? (
+                      pIdx === selectedPerm ? (
+                        <span className="text-[#34C759] text-sm">✓</span>
+                      ) : (
+                        <span className="text-[#34C759] text-[10px] opacity-60">valida</span>
+                      )
+                    ) : (
+                      <span className="text-[#8E8E93] text-[10px]">✗</span>
                     )}
                   </button>
                 ))}
@@ -296,7 +304,7 @@ function App() {
                   ? '⚠️ Troppi giorni fissati in Smart Working'
                   : dayStates.filter(s => s === 'office').length > Math.ceil(officeTarget)
                   ? '⚠️ Troppi giorni fissati in Ufficio'
-                  : 'Nessuna combinazione valida con questi vincoli'}
+                  : 'Nessuna combinazione possibile'}
               </p>
             </div>
           )}

@@ -1,88 +1,177 @@
 # SmartWorkingDays — Integrazione con Business Central, Teams e Outlook
 
 > **Documento di specifica tecnica e funzionale**  
-> Versione: 1.0 — Giugno 2026  
+> Versione: 2.0 — Giugno 2026  
 > Stato: **Progettazione** (non ancora implementato)
 
 ---
 
 ## 📋 Indice
 
-1. [Panoramica](#panoramica)
-2. [Business Central](#1-business-central)
-   - [Cosa si integra](#11-cosa-si-integra)
-   - [Architettura tecnica](#12-architettura-tecnica)
-   - [Impatto su UI e backend](#13-impatto-su-ui-e-backend)
-3. [Microsoft Teams](#2-microsoft-teams)
-   - [Cosa si integra](#21-cosa-si-integra)
-   - [Architettura tecnica](#22-architettura-tecnica)
-   - [Impatto su UI e backend](#23-impatto-su-ui-e-backend)
-4. [Microsoft Outlook](#3-microsoft-outlook)
-   - [Cosa si integra](#31-cosa-si-integra)
-   - [Architettura tecnica](#32-architettura-tecnica)
-   - [Impatto su UI e backend](#33-impatto-su-ui-e-backend)
-5. [Integrazione combinata: il flusso completo](#4-integrazione-combinata-il-flusso-completo)
-6. [Considerazioni di sicurezza](#5-considerazioni-di-sicurezza)
-7. [Roadmap implementativa](#6-roadmap-implementativa)
+1. [Filosofia dell'integrazione](#filosofia-dellintegrazione)
+2. [Panoramica del flusso](#panoramica-del-flusso)
+3. [Business Central](#1-business-central)
+   - [Cosa legge l'app (input)](#11-cosa-legge-lapp-da-bc)
+   - [Cosa scrive l'app (output)](#12-cosa-scrive-lapp-su-bc)
+   - [Architettura tecnica](#13-architettura-tecnica)
+4. [Microsoft Outlook](#2-microsoft-outlook)
+   - [Cosa legge l'app (input)](#21-cosa-legge-lapp-da-outlook)
+   - [Cosa scrive l'app (output)](#22-cosa-scrive-lapp-su-outlook)
+   - [Architettura tecnica](#23-architettura-tecnica)
+5. [Microsoft Teams](#3-microsoft-teams)
+   - [Cosa legge l'app (input)](#31-cosa-legge-lapp-da-teams)
+   - [Cosa scrive l'app (output)](#32-cosa-scrive-lapp-su-teams)
+   - [Architettura tecnica](#33-architettura-tecnica)
+6. [Flusso completo](#4-flusso-completo)
+7. [Impatto su UI e backend](#5-impatto-su-ui-e-backend)
+8. [Considerazioni di sicurezza](#6-considerazioni-di-sicurezza)
+9. [Roadmap implementativa](#7-roadmap-implementativa)
 
 ---
 
-## Panoramica
+## Filosofia dell'integrazione
 
-SmartWorkingDays è oggi una SPA React che calcola permutazioni SW/Ufficio in base alla regola aziendale del 60%. L'integrazione con l'ecosistema Microsoft 365 (Business Central, Teams, Outlook) la trasformerebbe da **calcolatore standalone** a **hub operativo** per la gestione completa dello smart working aziendale.
+> **SmartWorkingDays è l'orchestratore, non il gregario.**
 
-### Visione integrata
+L'app non dipende da nessun sistema esterno per le sue regole o la sua logica. La regola del 60%, le mappe SW/Ufficio, il motore di permutazioni — tutto è **interno e autonomo**.
+
+Il ruolo dell'app nell'ecosistema Microsoft 365 è duplice:
+
+### 🔵 INPUT — L'app raccoglie dati per aiutare l'utente
+
+L'app **legge** da BC, Outlook e Teams informazioni già esistenti sulla settimana dell'utente, e le usa per **pre-compilare i vincoli** nella UI. L'utente vede subito quali giorni sono già "bloccati" da impegni esterni e può decidere di conseguenza.
+
+| Fonte | Cosa legge | Effetto nella UI |
+|---|---|---|
+| **Outlook** | Eventi calendario (ferie, permessi, meeting in sede) | Giorni pre-impostati come Assenza o Ufficio |
+| **Teams** | Riunioni pianificate nella settimana | Giorni con riunioni in sede → pre-impostati Ufficio |
+| **Business Central** | Timesheet / registrazioni presenza già inserite | Giorni già rendicontati → pre-impostati come SW/Ufficio/Assenza |
+
+### 🟢 OUTPUT — L'app scrive i risultati dove servono
+
+Dopo che l'utente ha impostato quanti giorni SW vuole fare, scelto una permutazione e confermato, l'app **scrive** la pianificazione verso i sistemi che ne hanno bisogno.
+
+| Destinazione | Cosa scrive | Effetto |
+|---|---|---|
+| **Outlook** | Eventi "Smart Working" sul calendario | I colleghi vedono che quel giorno sei in SW |
+| **Teams** | Notifica al canale del team / manager | Il team sa chi è in ufficio e chi in SW |
+| **Business Central** | Pianificazione SW nella tabella custom | HR/reporting hanno i dati aggregati |
+
+### ❌ Cosa l'app NON fa
+
+- **NON** dipende da policy lette da BC — la regola 60% è hardcodata nell'app (modificabile via config)
+- **NON** avvia workflow di approvazione — l'app scrive dati, l'approvazione è un processo separato
+- **NON** invia email automatiche non richieste — solo notifiche Teams e scrittura eventi Outlook
+- **NON** è un bot Teams che sostituisce la UI — la UI React rimane l'interfaccia primaria
+
+---
+
+## Panoramica del flusso
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│                     SmartWorkingDays                         │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌─────────────┐ │
-│  │ React UI │  │ API Layer│  │ Scheduler│  │ MS365 Client│ │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └──────┬──────┘ │
-│       │              │              │               │        │
-└───────┼──────────────┼──────────────┼───────────────┼────────┘
-        │              │              │               │
-        ▼              ▼              ▼               ▼
-   ┌─────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐
-   │ Browser │  │ BC API   │  │ Cron Job │  │ Graph API    │
-   │ (utente)│  │ (ODATA)  │  │ (node)   │  │ (MS365)      │
-   └─────────┘  └──────────┘  └──────────┘  └──────────────┘
+                        SmartWorkingDays
+                        ═══════════════════
+                              │
+         ┌────────────────────┼────────────────────┐
+         │                    │                    │
+         ▼                    ▼                    ▼
+    ┌─────────┐          ┌─────────┐          ┌─────────┐
+    │ Outlook │          │  Teams  │          │   BC    │
+    │ (Graph) │          │ (Graph) │          │ (OData) │
+    └─────────┘          └─────────┘          └─────────┘
+         │                    │                    │
+         │  eventi            │  riunioni           │  timesheet
+         │  calendario        │  pianificate        │  presenze
+         │                    │                    │
+         └────────────────────┼────────────────────┘
+                              │
+                              ▼
+                    ┌──────────────────┐
+                    │  PRE-COMPILAZIONE │
+                    │  dei 5 giorni     │
+                    └──────────────────┘
+                              │
+                              ▼
+                    ┌──────────────────┐
+                    │  UTENTE IMPOSTA   │
+                    │  "Voglio X SW"    │
+                    │  + aggiusta giorni│
+                    └──────────────────┘
+                              │
+                              ▼
+                    ┌──────────────────┐
+                    │  APP CALCOLA      │
+                    │  permutazioni     │
+                    │  (motore interno) │
+                    └──────────────────┘
+                              │
+                              ▼
+                    ┌──────────────────┐
+                    │  UTENTE SCEGLIE   │
+                    │  e CONFERMA       │
+                    └──────────────────┘
+                              │
+         ┌────────────────────┼────────────────────┐
+         │                    │                    │
+         ▼                    ▼                    ▼
+    ┌─────────┐          ┌─────────┐          ┌─────────┐
+    │ Outlook │          │  Teams  │          │   BC    │
+    │ eventi  │          │ notifica│          │ planning│
+    │ SW      │          │ canale  │          │ salvata │
+    └─────────┘          └─────────┘          └─────────┘
 ```
 
 ---
 
 ## 1. Business Central
 
-### 1.1 Cosa si integra
+### 1.1 Cosa legge l'app da BC
 
-| Funzionalità | Descrizione |
-|---|---|
-| **Lettura presenze** | Recupera dal *Employee Attendance* o *Time Registration* i giorni già registrati come SW/Ufficio/Assenza |
-| **Scrittura pianificazione** | Invia la settimana scelta dall'utente come *planned attendance* in BC |
-| **Validazione regole aziendali** | BC espone le policy SW (es. 60%) via API — l'app le consuma invece di hardcodarle |
-| **Approvazione manager** | Invia richiesta di approvazione al workflow BC; l'app mostra lo stato (pending/approved/rejected) |
-| **Statistiche dipartimentali** | Recupera dati aggregati: quanti SW questo mese, trend, occupancy ufficio |
+L'app interroga BC per recuperare **dati già esistenti** sull'utente, e li usa per pre-compilare la settimana.
 
-### 1.2 Architettura tecnica
+| Dato letto | Endpoint BC (OData) | Mapping nella UI |
+|---|---|---|
+| **Timesheet della settimana** — giorni già registrati come lavorati/assenti | `GET /companies({id})/employees({employeeId})/timeRegistrationEntries?$filter=date ge {monday} and date le {friday}` | Se un giorno ha timbratura → `office` (l'utente era in sede). Se assenza registrata → `absent`. |
+| **Pianificazioni SW precedenti** — settimane già pianificate dall'utente | `GET /companies({id})/customTable_SWPlanning?$filter=employeeNo eq '{id}' and weekStart eq '{monday}'` | Se esiste già una pianificazione per quella settimana → pre-compila TUTTI i 5 giorni con i valori salvati. L'utente può modificarli. |
+| **Ferie/permessi approvati** — assenze già autorizzate in BC | `GET /companies({id})/employees({employeeId})/absenceRegistrations?$filter=date ge {monday} and date le {friday}` | Giorni con assenza approvata → `absent` (non modificabile, o modificabile con warning) |
+
+**Regola di pre-compilazione (priorità decrescente):**
+1. Se BC ha un'assenza approvata → giorno = `absent` (bloccato)
+2. Se BC ha una timbratura/ufficio → giorno = `office`
+3. Se BC ha già una pianificazione SW salvata → giorno = valore salvato
+4. Altrimenti → giorno = `free`
+
+### 1.2 Cosa scrive l'app su BC
+
+Dopo la conferma dell'utente, l'app salva la pianificazione in BC.
+
+| Dato scritto | Endpoint BC (OData) | Contenuto |
+|---|---|---|
+| **Pianificazione SW settimanale** | `POST /companies({id})/customTable_SWPlanning` | I 5 giorni (Lun-Ven) con stato `sw`/`office`/`absent`, data inizio settimana, employee ID |
+| **Aggiornamento pianificazione** | `PATCH /companies({id})/customTable_SWPlanning({entryId})` | Se l'utente modifica una settimana già pianificata |
+
+**Nota:** L'app NON gestisce workflow di approvazione. La tabella custom in BC può essere configurata dall'amministratore BC per triggerare un workflow, ma questa è logica lato BC, non lato app.
+
+### 1.3 Architettura tecnica
 
 #### Autenticazione
 ```
 OAuth 2.0 con Microsoft Entra ID (Azure AD)
 ├── App Registration in Azure Portal
 ├── Delegated permissions: BC API access (user impersonation)
-├── Token refresh automatico via MSAL.js (lato browser) o msal-node (backend)
+├── Token refresh automatico via MSAL.js (lato browser)
 └── Scope: https://api.businesscentral.dynamics.com/.default
 ```
 
-#### Endpoint BC (OData v4)
+#### Endpoint BC usati (solo lettura + scrittura pianificazione)
 
 | Operazione | Metodo | Endpoint |
 |---|---|---|
-| Leggi presenze dipendente | `GET` | `/companies({id})/employees({employeeId})/timeRegistrationEntries?$filter=date ge {start} and date le {end}` |
-| Scrivi pianificazione | `POST` | `/companies({id})/customTable_SWPlanning` (tabella custom AL) |
-| Leggi policy aziendale | `GET` | `/companies({id})/customTable_SWPolicy` |
-| Invia per approvazione | `POST` | `/companies({id})/workflow_SWApproval` |
-| Statistiche reparto | `GET` | `/companies({id})/customTable_SWStats?$apply=groupby((department))` |
+| Leggi timesheet | `GET` | `/companies({id})/employees({employeeId})/timeRegistrationEntries?$filter=date ge {start} and date le {end}` |
+| Leggi assenze | `GET` | `/companies({id})/employees({employeeId})/absenceRegistrations?$filter=date ge {start} and date le {end}` |
+| Leggi pianificazione esistente | `GET` | `/companies({id})/customTable_SWPlanning?$filter=employeeNo eq '{id}' and weekStart eq '{date}'` |
+| Salva pianificazione | `POST` | `/companies({id})/customTable_SWPlanning` |
+| Aggiorna pianificazione | `PATCH` | `/companies({id})/customTable_SWPlanning({entryId})` |
 
 #### Tabella custom AL necessaria in BC
 
@@ -102,10 +191,9 @@ table 50110 "SW Planning"
         field(6; "Wednesday"; Enum "SW Day Type") { }
         field(7; "Thursday"; Enum "SW Day Type") { }
         field(8; "Friday"; Enum "SW Day Type") { }
-        field(9; "Status"; Enum "SW Approval Status") { }
-        field(10; "Submitted By"; Code[50]) { }
-        field(11; "Approved By"; Code[50]) { }
-        field(12; "Notes"; Text[250]) { }
+        field(9; "SW Days Requested"; Integer) { Caption = 'Giorni SW richiesti dall utente'; }
+        field(10; "Submitted At"; DateTime) { }
+        field(11; "Notes"; Text[250]) { }
     }
 
     keys
@@ -123,76 +211,167 @@ enum 50111 "SW Day Type"
     value(2; "Office") { Caption = 'Ufficio'; }
     value(3; "Absent") { Caption = 'Assenza'; }
 }
-
-enum 50112 "SW Approval Status"
-{
-    Extensible = false;
-    value(0; "Draft") { Caption = 'Bozza'; }
-    value(1; "Pending") { Caption = 'In approvazione'; }
-    value(2; "Approved") { Caption = 'Approvato'; }
-    value(3; "Rejected") { Caption = 'Rifiutato'; }
-}
 ```
 
-#### Flusso dati
+**Nota:** Rimosso l'enum `SW Approval Status` e i campi `Submitted By`/`Approved By` — l'app non gestisce approvazioni. Aggiunto campo `SW Days Requested` per tracciare quanti giorni SW l'utente aveva chiesto.
 
+#### Modulo backend previsto: `src/businessCentral.js`
+
+```javascript
+// Funzioni di LETTURA (input per pre-compilazione)
+fetchTimesheetWeek(employeeId, weekStart)    → GET OData timeRegistrationEntries
+fetchAbsencesWeek(employeeId, weekStart)     → GET OData absenceRegistrations
+fetchExistingPlanning(employeeId, weekStart) → GET OData customTable_SWPlanning
+
+// Funzioni di SCRITTURA (output dopo conferma)
+savePlanning(employeeId, weekPlan, swDaysRequested) → POST OData customTable_SWPlanning
+updatePlanning(entryId, weekPlan)                   → PATCH OData customTable_SWPlanning
+
+// Funzione di pre-compilazione (pura, testabile)
+prefillDayStates(timesheet, absences, existingPlan) → ['free','sw','office','absent'][]
 ```
-1. App → GET /timeRegistrationEntries → popola i giorni già fissati
-2. Utente configura la settimana nell'app
-3. App → POST /customTable_SWPlanning → salva pianificazione
-4. App → POST /workflow_SWApproval → avvia workflow approvazione
-5. App → GET /customTable_SWPlanning?$filter=status eq 'Pending' → polling stato
-```
-
-### 1.3 Impatto su UI e backend
-
-#### UI
-- **Nuovo pulsante "Sincronizza da BC"**: importa presenze già registrate e pre-compila i 5 giorni
-- **Badge di stato approvazione** su ogni permutazione: 🟡 pending, 🟢 approved, 🔴 rejected
-- **Dropdown dipendente** (se l'utente è manager): seleziona un employee e ne visualizza/modifica la pianificazione
-- **Dashboard statistiche**: grafico a barre SW vs Ufficio del mese corrente (dati da BC)
-- **Toggle "Usa policy BC"**: se attivo, i target SW/Ufficio vengono letti da BC invece che dalla mappa hardcodata
-
-#### Backend
-- **Nuovo modulo `src/businessCentral.js`**:
-  - `fetchAttendance(employeeId, weekStart)` → GET OData
-  - `savePlanning(employeeId, weekPlan)` → POST OData
-  - `submitForApproval(entryId)` → POST workflow
-  - `fetchPolicy()` → GET policy aziendale
-  - `fetchStats(department, month)` → GET statistiche
-- **MSAL.js** per auth lato browser (PKCE flow)
-- **Cache locale** (localStorage) per ridurre chiamate API
-- **Test dedicati** in `src/businessCentral.test.js` con mock OData
 
 ---
 
-## 2. Microsoft Teams
+## 2. Microsoft Outlook
 
-### 2.1 Cosa si integra
+### 2.1 Cosa legge l'app da Outlook
 
-| Funzionalità | Descrizione |
+L'app interroga il calendario Outlook dell'utente tramite Microsoft Graph e mappa gli eventi in vincoli per i giorni della settimana.
+
+| Dato letto | Endpoint Graph | Mapping nella UI |
+|---|---|---|
+| **Eventi calendario** (ferie, permessi, meeting) | `GET /me/calendar/calendarView?startDateTime={monday}&endDateTime={friday}` | Eventi analizzati per tipo |
+| **Out of office automatico** | `GET /me/mailboxSettings/automaticRepliesSetting` | Se OOO attivo nella settimana → tutti i giorni `absent` |
+
+#### Regole di mapping eventi → stato giorno
+
+| Condizione evento | Stato giorno | Note |
+|---|---|---|
+| `showAs === "oof"` (out of office) | `absent` | Ferie/permesso — giorno bloccato |
+| Categoria "Ferie", "Permesso", "Assenza" | `absent` | Bloccato |
+| `showAs === "busy"` + location contiene "Ufficio"/"Sede" | `office` | Meeting in presenza |
+| `showAs === "busy"` + isOnlineMeeting = true | `office` | Riunione Teams — vedi sezione Teams |
+| Evento "Smart Working" (creato dall'app in passato) | `sw` | Pianificazione precedente |
+| Nessun evento rilevante | `free` | Libero |
+
+**Regola di precedenza tra Outlook e BC:**
+- Se Outlook dice `absent` (ferie) → vince su tutto, giorno bloccato
+- Se Outlook dice `office` (meeting in sede) → vince su BC timesheet
+- Se Outlook non ha eventi → vale il dato BC
+
+### 2.2 Cosa scrive l'app su Outlook
+
+Dopo la conferma, l'app crea eventi sul calendario Outlook per i giorni SW.
+
+| Dato scritto | Endpoint Graph | Contenuto |
+|---|---|---|
+| **Evento "Smart Working"** per ogni giorno SW | `POST /me/calendar/events` | Evento all-day, showAs="workingElsewhere", categoria "Smart Working" |
+| **Rimozione eventi SW precedenti** (se modifica) | `DELETE /me/calendar/events/{eventId}` | Cancella vecchi eventi SW della stessa settimana prima di crearne di nuovi |
+
+#### Payload evento SW su Outlook
+
+```json
+{
+  "subject": "🏠 Smart Working",
+  "body": {
+    "contentType": "HTML",
+    "content": "Giorno di Smart Working pianificato tramite SmartWorkingDays.<br>Settimana del {weekStart}."
+  },
+  "start": { "dateTime": "2026-06-23T00:00:00", "timeZone": "Europe/Rome" },
+  "end": { "dateTime": "2026-06-23T23:59:00", "timeZone": "Europe/Rome" },
+  "isAllDay": true,
+  "showAs": "workingElsewhere",
+  "categories": ["Smart Working"],
+  "sensitivity": "normal",
+  "reminderMinutesBeforeStart": 0
+}
+```
+
+**Nota:** L'app NON invia email. La notifica ai colleghi avviene tramite:
+1. Evento su calendario (visibile a chi ha accesso al calendario dell'utente)
+2. Notifica Teams (vedi sezione Teams)
+
+### 2.3 Architettura tecnica
+
+#### Microsoft Graph API
+
+```
+Endpoint base: https://graph.microsoft.com/v1.0
+Auth: OAuth 2.0 (stesso token Entra ID, scope aggiuntivi)
+Scope necessari: Calendars.ReadWrite, MailboxSettings.Read
+```
+
+#### Endpoint Graph usati
+
+| Operazione | Metodo | Endpoint |
+|---|---|---|
+| Leggi eventi settimana | `GET` | `/me/calendar/calendarView?startDateTime={start}&endDateTime={end}&$select=subject,start,end,showAs,categories,location,isOnlineMeeting` |
+| Leggi OOO status | `GET` | `/me/mailboxSettings/automaticRepliesSetting` |
+| Crea evento SW | `POST` | `/me/calendar/events` |
+| Cancella evento SW | `DELETE` | `/me/calendar/events/{eventId}` |
+| Cerca eventi SW esistenti | `GET` | `/me/calendar/events?$filter=categories/any(c:c+eq+'Smart Working') and start/dateTime ge '{monday}' and end/dateTime le '{friday}'` |
+
+#### Modulo backend previsto: `src/outlookCalendar.js`
+
+```javascript
+// Funzioni di LETTURA (input per pre-compilazione)
+fetchCalendarWeek(startDate)              → GET Graph calendarView
+fetchOutOfOffice()                        → GET Graph mailboxSettings
+mapEventsToDayStates(events, oooStatus)   → ['free','sw','office','absent'][] (pura)
+
+// Funzioni di SCRITTURA (output dopo conferma)
+clearExistingSWEvents(weekStart)          → DELETE eventi SW esistenti nella settimana
+createSWEvents(weekPlan, weekStart)       → POST evento per ogni giorno SW
+```
+
+---
+
+## 3. Microsoft Teams
+
+### 3.1 Cosa legge l'app da Teams
+
+L'app interroga il calendario Teams dell'utente (che è lo stesso calendario Outlook/Exchange, ma filtrato per riunioni online) per rilevare meeting che richiedono presenza in ufficio.
+
+| Dato letto | Endpoint Graph | Mapping nella UI |
+|---|---|---|
+| **Riunioni online della settimana** | `GET /me/calendar/calendarView?$filter=isOnlineMeeting eq true` | Se la riunione ha location "Ufficio"/"Sede" o se l'utente ha una policy Teams che richiede presenza → giorno `office` |
+| **Presenza Teams (opzionale)** | `GET /me/presence` (solo al momento dell'uso) | Informazione in tempo reale: se l'utente è già in ufficio secondo Teams |
+
+**Nota pratica:** Le riunioni Teams sono già coperte dalla lettura del calendario Outlook (stesso backend Exchange). La sezione Teams per l'INPUT serve principalmente a:
+1. Identificare riunioni ibride (online + in presenza) che Outlook da solo non distinguerebbe
+2. Leggere la presenza Teams come conferma in tempo reale
+
+#### Regole aggiuntive per riunioni Teams
+
+| Condizione | Stato giorno |
 |---|---|
-| **Bot conversazionale** | L'utente scrive in chat "pianifica SW la prossima settimana" e il bot risponde con una Adaptive Card interattiva |
-| **Notifiche approvazione** | Quando il manager approva/rifiuta in BC, il dipendente riceve un messaggio in Teams |
-| **Adaptive Card pianificazione** | Card interattiva dentro Teams che replica la UI dell'app (selettore giorni, permutazioni) |
-| **Comandi rapidi** | `/sw plan`, `/sw status`, `/sw stats` — shortcut da chat Teams |
-| **Tab in canale** | L'app React è embeddable come Tab in un canale Teams del reparto |
-| **Reminder automatici** | Ogni lunedì mattina, il bot pinga chi non ha ancora pianificato la settimana |
+| Riunione Teams con tag "Presenza obbligatoria" o location fisica | `office` |
+| Riunione Teams senza requisiti di presenza | `free` (l'utente può fare SW anche se ha una call) |
+| Giorno con 3+ riunioni Teams consecutive | `office` (suggerito, non bloccato) |
 
-### 2.2 Architettura tecnica
+### 3.2 Cosa scrive l'app su Teams
 
-#### Bot Framework
+Dopo la conferma, l'app notifica il team tramite Teams.
 
+| Dato scritto | Meccanismo | Contenuto |
+|---|---|---|
+| **Notifica pianificazione** | Graph `POST /teams/{teamId}/channels/{channelId}/messages` | Messaggio nel canale del team: "Ricardo ha pianificato: 3 SW, 2 Ufficio questa settimana" |
+| **Scheda riepilogativa settimanale** (opzionale) | Stesso endpoint, formato Adaptive Card | Card con i 5 giorni colorati per ogni membro del team |
+| **Notifica modifica** | Stesso endpoint | "Ricardo ha aggiornato la pianificazione: ora 2 SW, 3 Ufficio" |
+
+#### Payload notifica Teams (messaggio semplice)
+
+```json
+{
+  "body": {
+    "contentType": "html",
+    "content": "<p><strong>Ricardo Quintero</strong> ha pianificato la settimana del 23/06:</p><p>🏠 Lun SW · 🏢 Mar Ufficio · 🏢 Mer Ufficio · 🏠 Gio SW · 🏠 Ven SW</p><p><em>3 giorni Smart Working, 2 giorni Ufficio</em></p>"
+  }
+}
 ```
-SmartWorkingDays Bot
-├── Registrato su Azure Bot Service
-├── Endpoint: https://smartworkingdays.example.com/api/teams/messages
-├── Messaging endpoint riceve Activity da Teams
-├── Autenticazione: Bot ID + Client Secret (Azure)
-└── Canali: Teams (primario), eventualmente Slack/Web Chat
-```
 
-#### Adaptive Card — esempio pianificazione
+#### Payload Adaptive Card riepilogativa (opzionale, per canale team)
 
 ```json
 {
@@ -201,7 +380,7 @@ SmartWorkingDays Bot
   "body": [
     {
       "type": "TextBlock",
-      "text": "Pianifica la tua settimana SW",
+      "text": "Pianificazione SW — Settimana 23/06",
       "weight": "Bolder",
       "size": "Large"
     },
@@ -211,271 +390,267 @@ SmartWorkingDays Bot
         {
           "type": "Column",
           "items": [
-            {
-              "type": "Input.ChoiceSet",
-              "id": "monday",
-              "choices": [
-                { "title": "🏠 SW", "value": "sw" },
-                { "title": "🏢 Ufficio", "value": "office" },
-                { "title": "✕ Assenza", "value": "absent" },
-                { "title": "◌ Libero", "value": "free" }
-              ],
-              "placeholder": "Lun"
-            }
+            { "type": "TextBlock", "text": "Ricardo", "weight": "Bolder" },
+            { "type": "TextBlock", "text": "🏠 Lun · 🏢 Mar · 🏢 Mer · 🏠 Gio · 🏠 Ven" },
+            { "type": "TextBlock", "text": "3 SW · 2 Ufficio", "isSubtle": true }
           ]
         }
-        // ... Mar, Mer, Gio, Ven
+        // ... altri membri del team
       ]
-    },
-    {
-      "type": "TextBlock",
-      "text": "${swTarget} giorni SW · ${officeTarget} giorni Ufficio",
-      "isSubtle": true
-    }
-  ],
-  "actions": [
-    {
-      "type": "Action.Submit",
-      "title": "Conferma pianificazione",
-      "data": { "action": "submitPlan" }
     }
   ]
 }
 ```
 
-#### Comandi bot
+**Nota:** L'app NON è un bot conversazionale. Non risponde a comandi chat. La notifica è unidirezionale: app → canale Teams. L'interfaccia utente rimane la web app React.
 
-| Comando | Risposta |
-|---|---|
-| `/sw plan` | Adaptive Card per pianificare la settimana corrente |
-| `/sw status` | Stato approvazione pianificazione corrente |
-| `/sw stats` | Riepilogo mensile personale (da BC) |
-| `/sw team` | Riepilogo SW del team (se manager) |
-| `/sw remind` | Forza un reminder ai membri del team (manager only) |
+### 3.3 Architettura tecnica
 
-#### Flusso notifiche
+#### Microsoft Graph API (per Teams)
 
 ```
-1. BC workflow approvazione completato
-2. BC → webhook → SmartWorkingDays backend
-3. Backend → Bot Framework REST API → messaggio proattivo in Teams
-4. Utente riceve: "✅ La tua pianificazione SW è stata approvata"
+Scope aggiuntivi: Teamwork.ReadWrite (o ChannelMessage.Send se disponibile)
+Endpoint: POST /teams/{teamId}/channels/{channelId}/messages
 ```
 
-### 2.3 Impatto su UI e backend
+**Limitazione attuale di Graph:** L'invio di messaggi a canali Teams tramite Graph ha scope ristretti (application permissions, non delegated). Alternative:
+1. **Graph API con application permissions** — richiede admin consent sul tenant
+2. **Incoming Webhook** — URL webhook configurato nel canale Teams, l'app fa POST HTTP semplice
+3. **Bot Framework** — overkill per notifiche unidirezionali
 
-#### UI (React)
-- **Nessuna modifica alla UI esistente** — l'app web rimane identica
-- **Nuova route `/teams-tab`**: versione compatta ottimizzata per iframe Teams (larghezza 280-400px)
-- **Configurazione Teams**: file `manifest.json` per il pacchetto Teams app
+**Consigliato: Incoming Webhook.** L'amministratore Teams configura un webhook nel canale, l'app riceve l'URL e lo usa per inviare messaggi.
 
-#### Backend
-- **Nuovo modulo `src/teamsBot.js`** (Node.js, separato dal bundle React):
-  - `handleMessage(activity)` → router comandi
-  - `sendAdaptiveCard(conversationId, card)` → invia card interattiva
-  - `sendProactiveMessage(userId, text)` → notifica non sollecitata
-  - `handleSubmit(actionData)` → processa risposta da Adaptive Card
-- **Endpoint Express** (o serverless function):
-  - `POST /api/teams/messages` — webhook Bot Framework
-  - `POST /api/teams/notify` — endpoint per trigger da BC webhook
-- **Database notifiche**: traccia messaggi inviati, stato consegna
-- **Test dedicati** in `src/teamsBot.test.js` con mock Activity
-
----
-
-## 3. Microsoft Outlook
-
-### 3.1 Cosa si integra
-
-| Funzionalità | Descrizione |
-|---|---|
-| **Lettura calendario** | Recupera eventi Outlook (ferie, permessi, meeting) e li mappa come giorni "Assenza" o "Ufficio" |
-| **Scrittura eventi SW** | Crea eventi ricorrenti "Smart Working" nei giorni scelti, con promemoria |
-| **Email automatiche** | Invio riepilogo settimanale, notifica approvazione, reminder pianificazione |
-| **Firma email dinamica** | Aggiunge alla firma lo stato SW della settimana ("Questa settimana: 3 SW, 2 Ufficio") |
-| **Outlook Add-in** | Pannello laterale in Outlook Web/Desktop che mostra la pianificazione SW |
-
-### 3.2 Architettura tecnica
-
-#### Microsoft Graph API
-
-```
-Endpoint base: https://graph.microsoft.com/v1.0
-Auth: OAuth 2.0 (stesso token Entra ID di BC, scope aggiuntivi)
-```
-
-#### Endpoint Graph usati
+#### Endpoint usati
 
 | Operazione | Metodo | Endpoint |
 |---|---|---|
-| Leggi eventi calendario | `GET` | `/me/calendar/calendarView?startDateTime={start}&endDateTime={end}` |
-| Crea evento SW | `POST` | `/me/calendar/events` |
-| Invia email | `POST` | `/me/sendMail` |
-| Leggi out-of-office | `GET` | `/me/mailboxSettings/automaticRepliesSetting` |
-| Imposta firma | `PATCH` | `/me/mailboxSettings` (solo admin) |
+| Leggi riunioni online | `GET` | `/me/calendar/calendarView?$filter=isOnlineMeeting eq true` (già coperto da Outlook) |
+| Invia notifica canale | `POST` | `{webhookUrl}` (Incoming Webhook) |
+| Invia Adaptive Card | `POST` | `{webhookUrl}` con body Adaptive Card |
 
-#### Payload creazione evento SW
+#### Modulo backend previsto: `src/teamsNotify.js`
 
-```json
-{
-  "subject": "🏠 Smart Working",
-  "body": {
-    "contentType": "HTML",
-    "content": "Giorno di Smart Working pianificato tramite SmartWorkingDays."
+```javascript
+// Funzioni di LETTURA (input per pre-compilazione)
+fetchOnlineMeetingsWithLocation(startDate) → GET Graph calendarView filtrato
+mapTeamsMeetingsToConstraints(meetings)    → ['free','office'][] (pura)
+
+// Funzioni di SCRITTURA (output dopo conferma)
+notifyChannel(webhookUrl, message)         → POST Incoming Webhook (testo semplice)
+notifyChannelCard(webhookUrl, card)         → POST Incoming Webhook (Adaptive Card)
+buildWeeklySummaryCard(teamPlans)           → genera Adaptive Card riepilogativa (pura)
+```
+
+---
+
+## 4. Flusso completo
+
+### Scenario reale: l'utente pianifica la settimana
+
+```
+L'UTENTE APRE L'APP
+│
+├── [1] LOGIN MICROSOFT (OAuth PKCE)
+│   ├── Token Entra ID ottenuto
+│   └── Scope: BC API + Graph (Calendar, Teams)
+│
+├── [2] RACCOLTA DATI (INPUT — in parallelo)
+│   ├── GET BC timesheet → Lun=timbrato, Mar=timbrato, Mer=vuoto, Gio=vuoto, Ven=vuoto
+│   ├── GET BC assenze → nessuna assenza questa settimana
+│   ├── GET BC pianificazione esistente → nessuna (prima volta)
+│   ├── GET Outlook calendarView → Mer 10-12: meeting "Q2 Review" in sede
+│   ├── GET Outlook OOO → non attivo
+│   └── GET Teams riunioni → Mer: riunione Teams (già vista via Outlook)
+│
+├── [3] PRE-COMPILAZIONE UI
+│   ├── Lun: office (timbrato in BC)
+│   ├── Mar: office (timbrato in BC)
+│   ├── Mer: office (meeting in sede — Outlook vince su BC vuoto)
+│   ├── Gio: free (nessun dato)
+│   └── Ven: free (nessun dato)
+│
+├── [4] UTENTE IMPOSTA L'OBIETTIVO
+│   ├── "Questa settimana voglio fare 2 giorni di Smart Working"
+│   ├── I target SW/Ufficio si aggiornano: 3.0 SW, 2.0 Ufficio (regola 60% su 5gg)
+│   ├── Giorni già fissati: Lun=office, Mar=office, Mer=office → 3 office fissi
+│   ├── Giorni liberi: Gio, Ven → 2 giorni da assegnare
+│   └── L'utente può forzare un giorno (es. cambiare Mer da office a free se il meeting è saltato)
+│
+├── [5] APP CALCOLA PERMUTAZIONI (motore interno)
+│   ├── 2 giorni liberi → 2^2 = 4 permutazioni totali
+│   ├── Target: 3.0 SW, 2.0 Office
+│   ├── Fixed: 3 Office → servono 0 SW e 0 Office dai liberi? Impossibile.
+│   └── L'app mostra: "⚠️ Troppi giorni fissati in Ufficio. Libera almeno 1 giorno."
+│
+├── [6] UTENTE AGGIUSTA
+│   ├── Cambia Mar da office a free (il timbrato BC era di un'altra settimana)
+│   ├── Ora: Lun=office, Mar=free, Mer=office, Gio=free, Ven=free
+│   ├── 3 giorni liberi → 2^3 = 8 permutazioni
+│   ├── Target: 3.0 SW, 2.0 Office. Fixed: 2 Office → servono 3 SW e 0 Office dai liberi
+│   └── 1 permutazione valida: Mar=SW, Gio=SW, Ven=SW
+│
+├── [7] UTENTE CONFERMA
+│   └── Clicca "Conferma pianificazione"
+│
+├── [8] SCRITTURA (OUTPUT — in parallelo)
+│   ├── POST BC /customTable_SWPlanning → salva pianificazione
+│   ├── DELETE Outlook eventi SW vecchi della settimana (se esistono)
+│   ├── POST Outlook /me/calendar/events × 3 → eventi SW per Mar, Gio, Ven
+│   └── POST Teams webhook → notifica canale: "Ricardo: 3 SW, 2 Ufficio"
+│
+└── [9] FEEDBACK ALL'UTENTE
+    ├── Toast verde: "Pianificazione salvata ✅"
+    ├── Badge su ogni giorno: 🏠 SW / 🏢 Ufficio / ✕ Assenza
+    └── Link: "Apri Outlook" / "Apri Teams"
+```
+
+---
+
+## 5. Impatto su UI e backend
+
+### 5.1 UI — Modifiche previste
+
+| Elemento UI | Descrizione |
+|---|---|
+| **Pulsante "Login Microsoft"** | In alto a destra. Avvia OAuth PKCE flow. Mostra avatar/nome utente dopo login |
+| **Banner "Dati importati"** | Sotto l'header: "📅 Dati importati da Outlook, Teams e BC" con data ultimo sync |
+| **Pulsante "Importa dati"** | Ricarica i dati dalle 3 fonti e ri-pre-compila i giorni. Con spinner durante il fetch |
+| **Badge su ogni giorno** | Oltre allo stato (SW/Ufficio/Assenza/Libero), un piccolo badge che indica la FONTE del vincolo: "📅 Outlook", "⏱️ BC", "💬 Teams", "✋ Manuale" |
+| **Giorni bloccati** | I giorni con assenza (ferie Outlook o assenza BC) hanno un lucchetto 🔒 e non sono cliccabili |
+| **Selettore "Giorni SW desiderati"** | Nuovo controllo: l'utente imposta quanti giorni SW vuole fare (es. "2"). L'app ricalcola i target e mostra se è possibile |
+| **Pulsante "Conferma e invia"** | Salva su BC, crea eventi Outlook, notifica Teams — tutto con un clic |
+| **Toast feedback** | Notifica temporanea: "Salvato su BC ✅ · Eventi Outlook creati ✅ · Teams notificato ✅" |
+| **Sezione "Riepilogo invio"** | Mini-tabella che mostra lo stato dell'invio alle 3 destinazioni |
+
+### 5.2 Backend — Nuovi moduli
+
+```
+src/
+├── smartworking.js          # Logica pura (esistente, invariata)
+├── smartworking.test.js     # 51 test (esistenti, invariati)
+├── App.jsx                  # UI React (da modificare)
+├── index.css                # Stili (da estendere)
+│
+├── msAuth.js                # NUOVO: MSAL.js PKCE flow, token storage in memoria
+├── msAuth.test.js           # Test auth flow
+│
+├── dataImport.js            # NUOVO: orchestratore import dati (chiama i 3 moduli sotto)
+├── dataImport.test.js       # Test orchestrazione import
+│
+├── businessCentral.js       # NUOVO: fetch timesheet/assenze/planning, save/update planning
+├── businessCentral.test.js  # Test con mock OData
+│
+├── outlookCalendar.js       # NUOVO: fetch eventi/OOO, map eventi→stati, create/delete eventi SW
+├── outlookCalendar.test.js # Test con mock Graph
+│
+├── teamsNotify.js           # NUOVO: fetch riunioni online, invia notifiche webhook
+├── teamsNotify.test.js      # Test con mock Graph/Webhook
+│
+└── prefillEngine.js         # NUOVO: logica pura di pre-compilazione (priorità fonti)
+    prefillEngine.test.js    # Test esaustivi delle regole di merging
+```
+
+### 5.3 Configurazione
+
+```javascript
+// config.js (nuovo file, modificabile senza rebuild)
+export const APP_CONFIG = {
+  // Regola smart working (modificabile per azienda)
+  swRatio: 0.6,                        // 60%
+  swDaysMap: { 5: 3.0, 4: 2.5, 3: 2.0, 2: 1.0, 1: 0.0, 0: 0.0 },
+  officeDaysMap: { 5: 2.0, 4: 1.5, 3: 1.0, 2: 1.0, 1: 1.0, 0: 0.0 },
+
+  // Fonti dati — quali attivare
+  sources: {
+    outlook: true,    // Importa eventi calendario
+    teams: true,      // Importa riunioni Teams
+    businessCentral: true,  // Importa timesheet/assenze
   },
-  "start": { "dateTime": "2026-06-23T00:00:00", "timeZone": "Europe/Rome" },
-  "end": { "dateTime": "2026-06-23T23:59:00", "timeZone": "Europe/Rome" },
-  "isAllDay": true,
-  "showAs": "workingElsewhere",
-  "categories": ["Smart Working"],
-  "reminderMinutesBeforeStart": 0
-}
-```
 
-#### Flusso sincronizzazione calendario
+  // Destinazioni output — quali attivare
+  outputs: {
+    outlook: true,    // Crea eventi SW su calendario
+    teams: true,      // Notifica canale Teams
+    businessCentral: true,  // Salva pianificazione
+  },
 
-```
-1. App → GET /me/calendar/calendarView → recupera eventi della settimana
-2. Eventi con categoria "Ferie" o showAs="oof" → giorno = 'absent'
-3. Eventi con showAs="busy" e location contiene "Ufficio" → giorno = 'office'
-4. Giorni senza eventi → giorno = 'free'
-5. Utente modifica e conferma
-6. App → POST /me/calendar/events per ogni giorno SW → crea eventi
-7. App → POST /me/sendMail → invia riepilogo a manager (se configurato)
-```
+  // Teams webhook URL (configurato dall'amministratore)
+  teamsWebhookUrl: '',
 
-#### Email automatiche
-
-| Trigger | Destinatario | Contenuto |
-|---|---|---|
-| Pianificazione inviata | Manager | "X ha pianificato 3 SW e 2 Ufficio per la settimana Y" |
-| Approvazione ricevuta | Dipendente | "La tua pianificazione è stata approvata/rifiutata" |
-| Lunedì senza piano | Dipendente | "Non hai ancora pianificato la settimana — clicca qui" |
-| Venerdì riepilogo | Dipendente | Riepilogo SW della settimana, statistiche mese |
-
-### 3.3 Impatto su UI e backend
-
-#### UI
-- **Pulsante "Importa da calendario"**: popola i giorni in base agli eventi Outlook
-- **Pulsante "Esporta su calendario"**: crea eventi Outlook per i giorni SW scelti
-- **Checkbox "Invia email al manager"**: attiva/disattiva notifica via email
-- **Sezione "Eventi Outlook rilevati"**: mostra in una mini-tabella gli eventi della settimana che hanno influenzato la pre-compilazione
-- **Outlook Add-in** (separato, React-based):
-  - Pannello laterale in Outlook che mostra la pianificazione corrente
-  - Pulsante "Modifica" che apre l'app completa in una finestra
-
-#### Backend
-- **Nuovo modulo `src/outlookGraph.js`**:
-  - `fetchCalendarWeek(startDate)` → GET Graph calendarView
-  - `mapEventsToDayStates(events)` → converte eventi in ['free','sw','office','absent']
-  - `createSWEvents(weekPlan)` → POST eventi per ogni giorno SW
-  - `sendApprovalEmail(managerEmail, plan)` → POST sendMail
-  - `sendReminderEmail(userEmail)` → POST sendMail
-- **Gestione rate limit Graph**: throttling, retry con backoff
-- **Test dedicati** in `src/outlookGraph.test.js` con mock Graph API
-
----
-
-## 4. Integrazione combinata: il flusso completo
-
-### Scenario: pianificazione settimanale con ecosistema completo
-
-```
-LUNEDÌ MATTINA
-├── Teams Bot invia reminder: "Pianifica la tua settimana SW"
-├── Utente clicca → Adaptive Card o apre l'app web
-│
-CONFIGURAZIONE (nell'app)
-├── [1] App → GET BC /timeRegistrationEntries → giorni già registrati
-├── [2] App → GET Graph /calendarView → eventi Outlook (ferie, meeting)
-├── [3] UI pre-compila: Lun=Ufficio (meeting), Mer=Assenza (ferie), altri=Liberi
-├── [4] Utente modifica: Gio→SW, Ven→SW
-├── [5] App calcola permutazioni e mostra 3 valide
-├── [6] Utente seleziona e conferma
-│
-SALVATAGGIO E NOTIFICHE
-├── [7] App → POST BC /customTable_SWPlanning → salva pianificazione
-├── [8] App → POST BC /workflow_SWApproval → avvia approvazione
-├── [9] App → POST Graph /me/calendar/events → crea eventi SW su Outlook
-├── [10] App → POST Graph /me/sendMail → email al manager
-├── [11] Teams Bot → messaggio conferma: "Pianificazione inviata ✅"
-│
-APPROVAZIONE (qualche ora dopo)
-├── Manager approva in BC
-├── BC → webhook → SmartWorkingDays backend
-├── Backend → Teams Bot → messaggio proattivo: "Approvata! 🟢"
-├── Backend → Graph sendMail → email conferma approvazione
-└── UI (al prossimo refresh) → badge verde su pianificazione
+  // BC company ID (configurato dall'amministratore)
+  bcCompanyId: '',
+};
 ```
 
 ---
 
-## 5. Considerazioni di sicurezza
+## 6. Considerazioni di sicurezza
 
 | Aspetto | Soluzione |
 |---|---|
-| **Auth** | OAuth 2.0 PKCE (browser) + Client Credentials (backend cron). Token MAI in localStorage — solo in memoria o httpOnly cookie |
-| **API key** | Bot Secret, Client Secret in variabili d'ambiente (`.env`), mai nel repo |
-| **CORS** | Backend API accetta solo origine `https://Chuucommie.github.io` e `https://teams.microsoft.com` |
-| **Rate limit** | Graph: 10k richieste/min per app — throttling lato client con retry-after. BC OData: nessun limite documentato ma caching aggressivo |
-| **Dati sensibili** | Pianificazioni SW non sono dati critici, ma email/employeeId sì — minimizzare log, nessun dato in URL query string |
-| **GDPR** | Se usato in azienda EU: base giuridica = legittimo interesse (gestione orario). Dati conservati max 24 mesi in BC |
-| **Tenant isolation** | L'app è single-tenant (un'azienda). Multi-tenant richiederebbe `/common` o `/organizations` endpoint + lookup tenant |
+| **Auth** | OAuth 2.0 PKCE (browser). Token in memoria (variabile JS), MAI in localStorage/sessionStorage. Refresh automatico via MSAL.js |
+| **API key** | Nessuna API key nel frontend. Il Teams webhook URL è l'unico "segreto" ed è configurabile dall'amministratore |
+| **CORS** | L'app chiama direttamente Graph e BC OData dal browser (no backend intermedio). CORS gestito da Microsoft |
+| **Rate limit** | Graph: throttling lato client con retry-after. BC OData: caching in memoria (1 minuto) per evitare chiamate duplicate |
+| **Dati sensibili** | Employee ID, email → in memoria, mai in URL. Logging solo in development mode |
+| **GDPR** | L'app non memorizza dati personali (solo in memoria durante la sessione). I dati persistono solo nei sistemi Microsoft (BC, Outlook, Teams) già conformi |
+| **Tenant isolation** | Single-tenant. L'App Registration in Azure è legata a un tenant specifico |
 
 ---
 
-## 6. Roadmap implementativa
+## 7. Roadmap implementativa
 
-### Fase 1 — Fondamenta (2-3 settimane)
-- [ ] App Registration su Azure (Entra ID)
-- [ ] Modulo `src/msAuth.js` con MSAL.js (PKCE flow)
+### Fase 1 — Auth + Config (1-2 settimane)
+- [ ] App Registration su Azure (Entra ID) con scope BC + Graph
+- [ ] Modulo `src/msAuth.js` con MSAL.js (PKCE flow, token in memoria)
 - [ ] Bottone "Login Microsoft" nella UI
-- [ ] Modulo `src/businessCentral.js` con `fetchAttendance()` e `savePlanning()`
-- [ ] Test con mock OData
+- [ ] File `config.js` con toggle fonti/destinazioni
+- [ ] Test auth flow
 
-### Fase 2 — BC Integration (2 settimane)
-- [ ] Tabella custom AL `SW Planning` + enum in BC
-- [ ] Endpoint OData esposti da BC
-- [ ] UI: import presenze, salva pianificazione, badge stato
-- [ ] Workflow approvazione in BC
+### Fase 2 — Import dati (2-3 settimane)
+- [ ] Modulo `src/outlookCalendar.js` — fetch eventi, mapping
+- [ ] Modulo `src/teamsNotify.js` — fetch riunioni online
+- [ ] Modulo `src/businessCentral.js` — fetch timesheet, assenze, planning esistente
+- [ ] Modulo `src/prefillEngine.js` — logica pura di merging con priorità
+- [ ] Modulo `src/dataImport.js` — orchestratore (chiama i 3, passa a prefillEngine)
+- [ ] UI: banner "Dati importati", badge fonte su ogni giorno, giorni bloccati
+- [ ] Test per ogni modulo con mock API
 
-### Fase 3 — Teams Bot (2-3 settimane)
-- [ ] Azure Bot Service registration
-- [ ] Backend Node.js per messaggi Teams
-- [ ] Adaptive Card pianificazione
-- [ ] Comandi `/sw plan`, `/sw status`
-- [ ] Notifiche proattive da webhook BC
+### Fase 3 — Output (2 settimane)
+- [ ] `businessCentral.js` — savePlanning, updatePlanning
+- [ ] `outlookCalendar.js` — clearExistingSWEvents, createSWEvents
+- [ ] `teamsNotify.js` — notifyChannel, notifyChannelCard
+- [ ] UI: pulsante "Conferma e invia", toast feedback, sezione riepilogo invio
+- [ ] Test output con mock API
 
-### Fase 4 — Outlook (2 settimane)
-- [ ] Modulo `src/outlookGraph.js`
-- [ ] UI: import/export calendario
-- [ ] Email automatiche (reminder, riepilogo)
-- [ ] Outlook Add-in (pannello laterale)
+### Fase 4 — Selettore "Giorni SW desiderati" (1 settimana)
+- [ ] UI: nuovo controllo per impostare quanti giorni SW l'utente vuole
+- [ ] Logica: ricalcolo target, validazione fattibilità
+- [ ] Test
 
-### Fase 5 — Polish (1 settimana)
-- [ ] Dashboard statistiche (dati BC aggregati)
-- [ ] Tab Teams per canale reparto
-- [ ] Firma email dinamica
-- [ ] Test end-to-end con MS365 sandbox
+### Fase 5 — Polish (1-2 settimane)
+- [ ] Gestione errori API (retry, messaggi utente comprensibili)
+- [ ] Offline mode: se API non raggiungibili, l'app funziona in modalità manuale
+- [ ] Configurazione amministratore (webhook URL, company ID) via pannello settings
+- [ ] Test end-to-end con tenant Microsoft 365 di test
 
 ---
 
-## Appendice: Stack tecnologico consigliato
+## Appendice: Stack tecnologico
 
 | Layer | Tecnologia |
 |---|---|
 | Frontend | React 19 + Vite (esistente) |
 | Auth browser | MSAL.js 3.x (@azure/msal-browser) |
-| Backend API | Node.js + Express (o Azure Functions serverless) |
-| Auth backend | MSAL Node (@azure/msal-node) + Client Credentials |
 | Graph client | @microsoft/microsoft-graph-client |
-| Bot SDK | Bot Framework SDK v4 (botbuilder) |
-| BC client | axios + OData query builder |
+| BC client | axios + OData query builder (puro, nessuna libreria BC specifica) |
 | Test | Vitest (esistente) + nock per mock HTTP |
-| Deploy | GitHub Pages (frontend) + Azure App Service / Functions (backend) |
+| Deploy | GitHub Pages (frontend only — nessun backend server) |
+
+**Perché nessun backend server:** L'app chiama le API Microsoft direttamente dal browser (OAuth PKCE + CORS gestito da Microsoft). Non servono server intermedi. Il Teams webhook è una semplice POST HTTP. Questo mantiene l'architettura semplice e riduce i costi.
 
 ---
 
-> **Nota:** Questo documento è una specifica di progettazione. Nessuna delle integrazioni descritte è ancora implementata nel codice. Il file serve come riferimento per lo sviluppo futuro e per allineare le aspettative tra sviluppatore e stakeholder.
+> **Nota:** Questo documento è una specifica di progettazione. Nessuna delle integrazioni descritte è ancora implementata nel codice. Il file serve come riferimento per lo sviluppo futuro.
 
-*Documento generato da IgelDev — 19 giugno 2026*
+*Documento generato da IgelDev — 19 giugno 2026 · Versione 2.0*

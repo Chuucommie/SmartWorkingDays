@@ -1,15 +1,19 @@
 // ──────────────────────────────────────────────
-// EOS Timesheet — Layout principale (React Router v7)
+// EOS Timesheet — Layout principale (React Router v6)
 // ──────────────────────────────────────────────
-import { Outlet, NavLink } from 'react-router-dom'
+import { Routes, Route, NavLink } from 'react-router-dom'
 import { isFeatureEnabled } from './modules/shared/config.js'
-import { ThemeProvider, useTheme } from './modules/shared/ThemeProvider.jsx'
+import { useTheme } from './modules/shared/ThemeProvider.jsx'
+import Dashboard from './Dashboard.jsx'
+import SmartWorkingApp from './modules/smartworking/SmartWorkingApp.jsx'
+import TeamViewPage from './modules/smartworking/TeamViewPage.jsx'
+import SavedWeeksPage from './modules/smartworking/SavedWeeksPage.jsx'
+import TimesheetApp from './modules/timesheet/TimesheetApp.jsx'
 
 /**
- * Layout interno che usa il tema.
- * Separato per rispettare l'ordine: RouterProvider > App > ThemeProvider > Outlet
+ * Layout globale con navbar, tema toggle e routing.
  */
-function AppInner() {
+export default function App() {
   const { theme, toggleTheme } = useTheme()
 
   return (
@@ -43,22 +47,16 @@ function AppInner() {
         </div>
       </nav>
 
-      {/* Area contenuto — renderizza la route figlia attiva */}
+      {/* Area contenuto con routing */}
       <main className="app-content">
-        <Outlet />
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/smartworking" element={<SmartWorkingApp />} />
+          <Route path="/smartworking/team" element={<TeamViewPage />} />
+          <Route path="/smartworking/saved" element={<SavedWeeksPage />} />
+          <Route path="/timesheet" element={<TimesheetApp />} />
+        </Routes>
       </main>
     </div>
-  )
-}
-
-/**
- * Layout globale che wrappa tutto con ThemeProvider.
- * ThemeProvider DEVE essere dentro il RouterProvider, non fuori.
- */
-export default function App() {
-  return (
-    <ThemeProvider>
-      <AppInner />
-    </ThemeProvider>
   )
 }

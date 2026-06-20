@@ -16,7 +16,7 @@ const STATE_ORDER = ['free', 'sw', 'office', 'absent']
 
 // Genera TUTTE le 2^k combinazioni per i giorni liberi.
 // Restituisce OGNI permutazione con flag `valid` (true se rispetta la regola 60%).
-function App() {
+function SmartWorkingApp() {
   // Stato: array di 5 elementi con 'free' | 'sw' | 'office' | 'absent'
   const [dayStates, setDayStates] = useState(['free', 'free', 'free', 'free', 'free'])
   const [selectedPerm, setSelectedPerm] = useState(null) // indice permutazione selezionata

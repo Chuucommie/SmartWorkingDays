@@ -1,17 +1,20 @@
 // ──────────────────────────────────────────────
-// EOS Timesheet — Router principale
+// EOS Timesheet — Layout principale (React Router v7)
 // ──────────────────────────────────────────────
-import { Routes, Route, NavLink } from 'react-router-dom'
-import Dashboard from './Dashboard.jsx'
-import SmartWorkingApp from './modules/smartworking/SmartWorkingApp.jsx'
-import TeamViewPage from './modules/smartworking/TeamViewPage.jsx'
-import SavedWeeksPage from './modules/smartworking/SavedWeeksPage.jsx'
-import TimesheetApp from './modules/timesheet/TimesheetApp.jsx'
+import { Outlet, NavLink } from 'react-router-dom'
 import { isFeatureEnabled } from './modules/shared/config.js'
+import { useTheme } from './modules/shared/ThemeProvider.jsx'
 
+/**
+ * Layout globale con navbar, tema toggle e area contenuto.
+ * Usa <Outlet /> per renderizzare le route figlie definite in main.jsx.
+ */
 export default function App() {
+  const { theme, toggleTheme } = useTheme()
+
   return (
     <div className="app-shell">
+      {/* Navbar globale */}
       <nav className="global-nav">
         <div className="nav-inner">
           <NavLink to="/" end className="nav-brand">
@@ -28,18 +31,21 @@ export default function App() {
                 ⏱️ Timesheet
               </NavLink>
             )}
+            {/* Theme toggle */}
+            <button
+              onClick={toggleTheme}
+              className="theme-toggle-btn"
+              title={theme === 'dark' ? 'Passa a tema chiaro' : 'Passa a tema scuro'}
+            >
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
           </div>
         </div>
       </nav>
 
+      {/* Area contenuto — renderizza la route figlia attiva */}
       <main className="app-content">
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/smartworking" element={<SmartWorkingApp />} />
-          <Route path="/smartworking/team" element={<TeamViewPage />} />
-          <Route path="/smartworking/saved" element={<SavedWeeksPage />} />
-          <Route path="/timesheet" element={<TimesheetApp />} />
-        </Routes>
+        <Outlet />
       </main>
     </div>
   )

@@ -1,18 +1,37 @@
 // ──────────────────────────────────────────────
-// EOS Timesheet — Entry point
+// EOS Timesheet — Entry point (React Router v7)
 // ──────────────────────────────────────────────
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { HashRouter } from 'react-router-dom'
+import { createHashRouter, RouterProvider } from 'react-router-dom'
+import { ThemeProvider } from './modules/shared/ThemeProvider.jsx'
 import App from './App.jsx'
+import Dashboard from './Dashboard.jsx'
+import SmartWorkingApp from './modules/smartworking/SmartWorkingApp.jsx'
+import TeamViewPage from './modules/smartworking/TeamViewPage.jsx'
+import SavedWeeksPage from './modules/smartworking/SavedWeeksPage.jsx'
+import TimesheetApp from './modules/timesheet/TimesheetApp.jsx'
 import './index.css'
 
-// HashRouter invece di BrowserRouter per compatibilità con GitHub Pages
+// createHashRouter per compatibilità con GitHub Pages
 // URL: /SmartWorkingDays/#/smartworking/team
+const router = createHashRouter([
+  {
+    element: <App />,
+    children: [
+      { path: '/', element: <Dashboard /> },
+      { path: '/smartworking', element: <SmartWorkingApp /> },
+      { path: '/smartworking/team', element: <TeamViewPage /> },
+      { path: '/smartworking/saved', element: <SavedWeeksPage /> },
+      { path: '/timesheet', element: <TimesheetApp /> },
+    ],
+  },
+])
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <HashRouter>
-      <App />
-    </HashRouter>
+    <ThemeProvider>
+      <RouterProvider router={router} />
+    </ThemeProvider>
   </StrictMode>,
 )

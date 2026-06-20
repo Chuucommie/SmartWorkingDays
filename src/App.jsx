@@ -3,13 +3,13 @@
 // ──────────────────────────────────────────────
 import { Outlet, NavLink } from 'react-router-dom'
 import { isFeatureEnabled } from './modules/shared/config.js'
-import { useTheme } from './modules/shared/ThemeProvider.jsx'
+import { ThemeProvider, useTheme } from './modules/shared/ThemeProvider.jsx'
 
 /**
- * Layout globale con navbar, tema toggle e area contenuto.
- * Usa <Outlet /> per renderizzare le route figlie definite in main.jsx.
+ * Layout interno che usa il tema.
+ * Separato per rispettare l'ordine: RouterProvider > App > ThemeProvider > Outlet
  */
-export default function App() {
+function AppInner() {
   const { theme, toggleTheme } = useTheme()
 
   return (
@@ -48,5 +48,17 @@ export default function App() {
         <Outlet />
       </main>
     </div>
+  )
+}
+
+/**
+ * Layout globale che wrappa tutto con ThemeProvider.
+ * ThemeProvider DEVE essere dentro il RouterProvider, non fuori.
+ */
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppInner />
+    </ThemeProvider>
   )
 }

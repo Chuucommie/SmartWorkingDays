@@ -14,16 +14,17 @@ import TimesheetApp from './modules/timesheet/TimesheetApp.jsx'
 import './index.css'
 
 // createHashRouter per compatibilità con GitHub Pages
-// URL: /SmartWorkingDays/#/smartworking/team
+// In React Router v7, i path figli sono RELATIVI al parent
 const router = createHashRouter([
   {
+    path: '/',
     element: <App />,
     children: [
-      { path: '/', element: <Dashboard /> },
-      { path: '/smartworking', element: <SmartWorkingApp /> },
-      { path: '/smartworking/team', element: <TeamViewPage /> },
-      { path: '/smartworking/saved', element: <SavedWeeksPage /> },
-      { path: '/timesheet', element: <TimesheetApp /> },
+      { index: true, element: <Dashboard /> },
+      { path: 'smartworking', element: <SmartWorkingApp /> },
+      { path: 'smartworking/team', element: <TeamViewPage /> },
+      { path: 'smartworking/saved', element: <SavedWeeksPage /> },
+      { path: 'timesheet', element: <TimesheetApp /> },
     ],
   },
 ])

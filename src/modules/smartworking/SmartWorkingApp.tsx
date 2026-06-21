@@ -7,6 +7,7 @@ import { MOCK_USER_ID, DEFAULT_SW_RULE, USER_RULES } from '../shared/config.ts'
 import type { SwRule } from '../shared/config.ts'
 import { computeTarget, describeSwRule } from '../shared/userProfile.ts'
 import { getCurrentMsId, getCurrentUserProfile } from '../shared/msAuth.ts'
+import { save } from './savedWeeks.ts'
 import UserBadge from './UserBadge.tsx'
 
 const DAY_LABELS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven'] as const
@@ -51,6 +52,11 @@ export default function SmartWorkingApp() {
   const [selectedPerm, setSelectedPerm] = useState<number | null>(null)
   const [animating, setAnimating] = useState(false)
   const [showAll, setShowAll] = useState(false)
+
+  // ── Salvataggio ──
+  const [saveName, setSaveName] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saveMsg, setSaveMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   // ── Regola SW dinamica ──
   const msId = getCurrentMsId() ?? MOCK_USER_ID
@@ -104,9 +110,31 @@ export default function SmartWorkingApp() {
     return '—'
   })()
 
+  // ── Salva la permutazione selezionata ──
+  const handleSave = () => {
+    if (selectedPerm === null) return
+    const perm = permutations[selectedPerm]
+    if (!perm || !perm.valid) return
+
+    const name = saveName.trim()
+    if (!name) {
+      setSaveMsg({ type: 'error', text: 'Inserisci un nome per la combinazione' })
+      return
+    }
+
+    const result = save(name, perm.week, perm.totalSW)
+    if (result.success) {
+      setSaveMsg({ type: 'success', text: `"${name}" salvata!` })
+      setSaveName('')
+      setSaving(false)
+    } else {
+      setSaveMsg({ type: 'error', text: result.error || 'Errore nel salvataggio' })
+    }
+    setTimeout(() => setSaveMsg(null), 3000)
+  }
+
   return (
-    <div className="min-h-screen flex items-start justify-center p-4 sm:p-8 pt-8 sm:pt-12"
-         style={{ background: 'linear-gradient(180deg, #F2F2F7 0%, #E8E8ED 50%, #F2F2F7 100%)' }}>
+    <div className="sw-page-bg min-h-screen flex items-start justify-center p-4 sm:p-8 pt-8 sm:pt-12">
 
       {/* Subtle background pattern */}
       <div className="fixed inset-0 pointer-events-none opacity-[0.025]"
@@ -128,10 +156,10 @@ export default function SmartWorkingApp() {
               <line x1="3" y1="10" x2="21" y2="10"/>
             </svg>
           </div>
-          <h1 className="text-[26px] font-semibold tracking-[-0.5px] text-[#1C1C1E] mb-1">
+          <h1 className="text-[26px] font-semibold tracking-[-0.5px] mb-1" style={{ color: 'var(--text-primary)' }}>
             Smart Working
           </h1>
-          <p className="text-[14px] text-[#8E8E93] font-normal">
+          <p className="text-[14px] font-normal" style={{ color: 'var(--text-secondary)' }}>
             Configura i vincoli e scegli la tua settimana
           </p>
 
@@ -147,10 +175,10 @@ export default function SmartWorkingApp() {
           {/* ── Selettore Giorni ── */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-[12px] font-medium text-[#8E8E93] uppercase tracking-[0.5px]">
+              <p className="text-[12px] font-medium uppercase tracking-[0.5px]" style={{ color: 'var(--text-secondary)' }}>
                 Configura settimana
               </p>
-              <span className="text-[12px] text-[#8E8E93]">
+              <span className="text-[12px]" style={{ color: 'var(--text-secondary)' }}>
                 clicca per cambiare stato
               </span>
             </div>
@@ -185,33 +213,33 @@ export default function SmartWorkingApp() {
               <span className="legend-pill sw">🏠 SW</span>
               <span className="legend-pill office">🏢 Ufficio</span>
               <span className="legend-pill absent">✕ Assenza</span>
-              <span className="text-[11px] text-[#8E8E93] self-center">◌ Libero</span>
+              <span className="text-[11px] self-center" style={{ color: 'var(--text-secondary)' }}>◌ Libero</span>
             </div>
           </div>
 
           {/* Divider */}
-          <div className="h-px bg-gradient-to-r from-transparent via-[#E5E5EA] to-transparent mb-5" />
+          <div className="h-px bg-gradient-to-r from-transparent via-[var(--border-primary)] to-transparent mb-5" />
 
           {/* ── Riepilogo Calcolo ── */}
           <div className="space-y-2 mb-5 px-1">
             <div className="flex justify-between items-center">
-              <span className="text-[14px] text-[#8E8E93]">Giorni lavorati</span>
-              <span className="text-[14px] font-medium text-[#1C1C1E]">{workedCount}/5</span>
+              <span className="text-[14px]" style={{ color: 'var(--text-secondary)' }}>Giorni lavorati</span>
+              <span className="text-[14px] font-medium" style={{ color: 'var(--text-primary)' }}>{workedCount}/5</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-[14px] text-[#8E8E93]">Regola SW</span>
-              <span className="text-[14px] font-medium text-[#1C1C1E]">{ruleDesc}</span>
+              <span className="text-[14px]" style={{ color: 'var(--text-secondary)' }}>Regola SW</span>
+              <span className="text-[14px] font-medium" style={{ color: 'var(--text-primary)' }}>{ruleDesc}</span>
             </div>
             {swRule.type === 'percentage' && (
               <div className="flex justify-between items-center">
-                <span className="text-[14px] text-[#8E8E93]">Percentuale ({swRule.value}%)</span>
-                <span className="text-[14px] font-medium text-[#1C1C1E]">{theoretical} giorni</span>
+                <span className="text-[14px]" style={{ color: 'var(--text-secondary)' }}>Percentuale ({swRule.value}%)</span>
+                <span className="text-[14px] font-medium" style={{ color: 'var(--text-primary)' }}>{theoretical} giorni</span>
               </div>
             )}
             {roundNote && roundNote !== '—' && (
               <div className="flex justify-between items-center">
-                <span className="text-[14px] text-[#8E8E93]">Arrotondamento</span>
-                <span className="text-[13px] text-[#34C759] font-medium">{roundNote}</span>
+                <span className="text-[14px]" style={{ color: 'var(--text-secondary)' }}>Arrotondamento</span>
+                <span className="text-[13px] font-medium" style={{ color: 'var(--text-green)' }}>{roundNote}</span>
               </div>
             )}
           </div>
@@ -241,20 +269,21 @@ export default function SmartWorkingApp() {
           {permutations.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[12px] font-medium text-[#8E8E93] uppercase tracking-[0.5px]">
+                <p className="text-[12px] font-medium uppercase tracking-[0.5px]" style={{ color: 'var(--text-secondary)' }}>
                   Combinazioni
                 </p>
                 <div className="flex items-center gap-2">
                   <span className="text-[12px] font-medium">
-                    <span className="text-[#34C759]">{validCount} valide</span>
+                    <span style={{ color: 'var(--text-green)' }}>{validCount} valide</span>
                     {showAll && (
-                      <span className="text-[#8E8E93]"> / {permutations.length} totali</span>
+                      <span style={{ color: 'var(--text-secondary)' }}> / {permutations.length} totali</span>
                     )}
                   </span>
                   {permutations.length > validCount && (
                     <button
                       onClick={() => setShowAll(s => !s)}
-                      className="text-[11px] px-2 py-1 rounded-full border border-[#E5E5EA] text-[#8E8E93] hover:bg-[#F2F2F7] transition-colors"
+                      className="text-[11px] px-2 py-1 rounded-full border transition-colors"
+                      style={{ borderColor: 'var(--border-primary)', color: 'var(--text-secondary)' }}
                     >
                       {showAll ? 'Solo valide' : `+${permutations.length - validCount} non valide`}
                     </button>
@@ -282,7 +311,7 @@ export default function SmartWorkingApp() {
                       ? `Aderenza ${pct}% — clicca per selezionare`
                       : 'Non valida: supera il target SW'}
                   >
-                    <span className="text-[11px] text-[#8E8E93] font-medium w-5 text-left">
+                    <span className="text-[11px] font-medium w-5 text-left" style={{ color: 'var(--text-secondary)' }}>
                       {origIdx + 1}
                     </span>
                     <div className="flex gap-1.5 flex-1 justify-center">
@@ -293,9 +322,9 @@ export default function SmartWorkingApp() {
                       ))}
                     </div>
                     <div className="flex items-center gap-1 text-[11px]">
-                      <span className={perm.valid ? 'text-[#248A3D] font-medium' : 'text-[#8E8E93]'}>🏠{perm.totalSW}</span>
-                      <span className="text-[#8E8E93]">·</span>
-                      <span className={perm.valid ? 'text-[#0056B3] font-medium' : 'text-[#8E8E93]'}>🏢{perm.totalOffice}</span>
+                      <span className={perm.valid ? 'font-medium' : ''} style={{ color: perm.valid ? 'var(--text-green)' : 'var(--text-secondary)' }}>🏠{perm.totalSW}</span>
+                      <span style={{ color: 'var(--text-secondary)' }}>·</span>
+                      <span className={perm.valid ? 'font-medium' : ''} style={{ color: perm.valid ? 'var(--text-blue)' : 'var(--text-secondary)' }}>🏢{perm.totalOffice}</span>
                     </div>
                     {/* Indicatore aderenza colorato */}
                     <span className={`adherence-badge ${adh.cls}`} title={`${adh.label}: ${pct}%`}>
@@ -303,12 +332,12 @@ export default function SmartWorkingApp() {
                     </span>
                     {perm.valid ? (
                       origIdx === selectedPerm ? (
-                        <span className="text-[#34C759] text-sm">✓</span>
+                        <span className="text-sm" style={{ color: 'var(--accent-green)' }}>✓</span>
                       ) : (
-                        <span className="text-[#34C759] text-[10px] opacity-60">valida</span>
+                        <span className="text-[10px] opacity-60" style={{ color: 'var(--accent-green)' }}>valida</span>
                       )
                     ) : (
-                      <span className="text-[#8E8E93] text-[10px]">✗</span>
+                      <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>✗</span>
                     )}
                   </button>
                 )})}
@@ -319,7 +348,7 @@ export default function SmartWorkingApp() {
           {/* Nessuna permutazione */}
           {permutations.length === 0 && workedCount > 0 && (
             <div className="text-center py-4">
-              <p className="text-[13px] text-[#8E8E93]">
+              <p className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
                 {dayStates.filter(s => s === 'sw').length > targetSW
                   ? '⚠️ Troppi giorni fissati in Smart Working'
                   : dayStates.filter(s => s === 'office').length > targetOffice
@@ -329,8 +358,64 @@ export default function SmartWorkingApp() {
             </div>
           )}
 
+          {/* ── Salva combinazione selezionata ── */}
+          {selectedPerm !== null && permutations[selectedPerm]?.valid && (
+            <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--border-secondary)' }}>
+              {!saving ? (
+                <button
+                  onClick={() => setSaving(true)}
+                  className="w-full py-2.5 rounded-full text-sm font-semibold transition-all"
+                  style={{
+                    background: 'var(--accent-green)',
+                    color: 'white',
+                    boxShadow: '0 2px 12px rgba(52,199,89,0.3)',
+                  }}
+                >
+                  💾 Salva questa combinazione
+                </button>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={saveName}
+                    onChange={e => setSaveName(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') { setSaving(false); setSaveName('') } }}
+                    placeholder="Nome combinazione..."
+                    maxLength={50}
+                    autoFocus
+                    className="flex-1 px-3 py-2 rounded-full text-sm border outline-none"
+                    style={{
+                      background: 'var(--bg-input)',
+                      borderColor: 'var(--border-primary)',
+                      color: 'var(--text-primary)',
+                    }}
+                  />
+                  <button
+                    onClick={handleSave}
+                    className="px-4 py-2 rounded-full text-sm font-semibold transition-all"
+                    style={{ background: 'var(--accent-green)', color: 'white' }}
+                  >
+                    ✓
+                  </button>
+                  <button
+                    onClick={() => { setSaving(false); setSaveName('') }}
+                    className="px-4 py-2 rounded-full text-sm font-medium transition-all"
+                    style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+              {saveMsg && (
+                <p className="text-center text-xs mt-2" style={{ color: saveMsg.type === 'success' ? 'var(--text-green)' : 'var(--text-red)' }}>
+                  {saveMsg.text}
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Info note */}
-          <p className="text-center text-[11px] text-[#8E8E93] mt-4 leading-relaxed">
+          <p className="text-center text-[11px] mt-4 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
             Regola: {ruleDesc} · Puoi fare meno SW del target
           </p>
         </div>
@@ -348,7 +433,7 @@ export default function SmartWorkingApp() {
               ⏱️ Dashboard
             </Link>
           </div>
-          <p className="text-center text-[11px] text-[#8E8E93] opacity-50">
+          <p className="text-center text-[11px] opacity-50" style={{ color: 'var(--text-secondary)' }}>
             SmartWorkingDays v3 · IgelDev
           </p>
         </div>

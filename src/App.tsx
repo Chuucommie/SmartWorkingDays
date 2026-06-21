@@ -11,7 +11,7 @@ import SavedWeeksPage from './modules/smartworking/SavedWeeksPage.tsx'
 import TimesheetApp from './modules/timesheet/TimesheetApp.tsx'
 
 /**
- * Layout globale con navbar, tema toggle e routing.
+ * Layout globale con navbar, tema toggle Apple-style e routing.
  */
 export default function App() {
   const { theme, toggleTheme } = useTheme()
@@ -35,13 +35,15 @@ export default function App() {
                 ⏱️ Timesheet
               </NavLink>
             )}
-            {/* Theme toggle */}
+            {/* Apple-style theme toggle switch */}
             <button
               onClick={toggleTheme}
-              className="theme-toggle-btn"
+              className={`theme-switch ${theme === 'dark' ? 'dark' : ''}`}
               title={theme === 'dark' ? 'Passa a tema chiaro' : 'Passa a tema scuro'}
+              aria-label={theme === 'dark' ? 'Passa a tema chiaro' : 'Passa a tema scuro'}
             >
-              {theme === 'dark' ? '☀️' : '🌙'}
+              <span className="theme-switch-icon sun">☀️</span>
+              <span className="theme-switch-icon moon">🌙</span>
             </button>
           </div>
         </div>

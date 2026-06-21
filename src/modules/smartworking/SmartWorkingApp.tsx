@@ -20,9 +20,8 @@ const STATES: Record<DayState, StateConfig> = {
   sw:        { label: 'SW Fisso', icon: '🏠', cls: 'state-sw',     dot: 'sw' },
   office:    { label: 'Ufficio',  icon: '🏢', cls: 'state-office', dot: 'office' },
   absent:    { label: 'Assenza',  icon: '✕', cls: 'state-absent', dot: 'absent' },
-  half:      { label: 'Misto',    icon: '◐', cls: 'state-half',   dot: 'half' },
 }
-const STATE_ORDER: DayState[] = ['free', 'sw', 'office', 'half', 'absent']
+const STATE_ORDER: DayState[] = ['free', 'sw', 'office', 'absent']
 
 /**
  * Pagina principale Smart Working.
@@ -153,7 +152,6 @@ export default function SmartWorkingApp() {
             <div className="flex justify-center gap-3 mt-3 flex-wrap">
               <span className="legend-pill sw">🏠 SW</span>
               <span className="legend-pill office">🏢 Ufficio</span>
-              <span className="legend-pill half">◐ Misto</span>
               <span className="legend-pill absent">✕ Assenza</span>
               <span className="text-[11px] text-[#8E8E93] self-center">◌ Libero</span>
             </div>

@@ -16,13 +16,12 @@ export interface Permutation {
   valid: boolean
 }
 
-const EPSILON = 0.001
-
 /**
- * Genera TUTTE le 3^k combinazioni per i giorni liberi.
- * Ogni giorno libero può diventare: sw, office, o half (mezza giornata).
- * Il giorno half contribuisce 0.5 a SW e 0.5 a Ufficio,
- * permettendo di raggiungere esattamente target frazionari (es. 2.5 SW, 1.5 Ufficio).
+ * Genera TUTTE le 2^k combinazioni per i giorni liberi.
+ *
+ * @param dayStates — array di 5 elementi: 'free' | 'sw' | 'office' | 'absent'
+ * @param swTarget — giorni SW target (es. 3.0, 2.5)
+ * @param officeTarget — giorni Ufficio target (es. 2.0, 1.5)
  */
 export function generateAllPermutations(
   dayStates: WeekPlan,
@@ -34,9 +33,8 @@ export function generateAllPermutations(
   let fixedOffice = 0
 
   dayStates.forEach((state, i) => {
-    if (state === 'sw') fixedSW += 1
-    else if (state === 'office') fixedOffice += 1
-    else if (state === 'half') { fixedSW += 0.5; fixedOffice += 0.5 }
+    if (state === 'sw') fixedSW++
+    else if (state === 'office') fixedOffice++
     else if (state === 'free') freeIndices.push(i)
   })
 
@@ -46,38 +44,37 @@ export function generateAllPermutations(
   if (k === 0) {
     const totalSW = fixedSW
     const totalOffice = fixedOffice
-    const valid = Math.abs(totalSW - swTarget) < EPSILON && Math.abs(totalOffice - officeTarget) < EPSILON
-    return [{ week: [...dayStates] as WeekPlan, totalSW, totalOffice, valid }]
+    const swOk = totalSW >= Math.floor(swTarget) && totalSW <= Math.ceil(swTarget)
+    const officeOk = totalOffice >= Math.floor(officeTarget) && totalOffice <= Math.ceil(officeTarget)
+    return [{ week: [...dayStates] as WeekPlan, totalSW, totalOffice, valid: swOk && officeOk }]
   }
 
-  // 3^k combinazioni: ogni giorno libero → sw, office, o half
-  const totalCombos = Math.pow(3, k)
+  const totalCombos = 1 << k // 2^k
   const all: Permutation[] = []
-  const choices: DayState[] = ['sw', 'office', 'half']
 
   for (let mask = 0; mask < totalCombos; mask++) {
     const week = [...dayStates] as WeekPlan
     let assignedSW = 0
     let assignedOffice = 0
-    let m = mask
 
     for (let bit = 0; bit < k; bit++) {
-      const choice = m % 3
-      m = Math.floor(m / 3)
       const dayIdx = freeIndices[bit]
-      const state = choices[choice]
-      week[dayIdx] = state
-      if (state === 'sw') assignedSW += 1
-      else if (state === 'office') assignedOffice += 1
-      else if (state === 'half') { assignedSW += 0.5; assignedOffice += 0.5 }
+      if (mask & (1 << bit)) {
+        week[dayIdx] = 'sw'
+        assignedSW++
+      } else {
+        week[dayIdx] = 'office'
+        assignedOffice++
+      }
     }
 
     const totalSW = fixedSW + assignedSW
     const totalOffice = fixedOffice + assignedOffice
 
-    const valid = Math.abs(totalSW - swTarget) < EPSILON && Math.abs(totalOffice - officeTarget) < EPSILON
+    const swOk = totalSW >= Math.floor(swTarget) && totalSW <= Math.ceil(swTarget)
+    const officeOk = totalOffice >= Math.floor(officeTarget) && totalOffice <= Math.ceil(officeTarget)
 
-    all.push({ week, totalSW, totalOffice, valid })
+    all.push({ week, totalSW, totalOffice, valid: swOk && officeOk })
   }
 
   return all

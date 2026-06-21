@@ -1030,15 +1030,6 @@ body {
 }
 .day-pill.state-absent:hover { opacity: 0.85; }
 
-.day-pill.state-half {
-  background: linear-gradient(135deg, rgba(52, 199, 89, 0.1) 0%, rgba(0, 122, 255, 0.1) 100%);
-  border-color: rgba(52, 199, 89, 0.4);
-  border-left-color: rgba(0, 122, 255, 0.4);
-  color: var(--text-primary);
-  box-shadow: 0 2px 10px rgba(52, 199, 89, 0.08), 0 2px 10px rgba(0, 122, 255, 0.06);
-}
-.day-pill.state-half:hover { box-shadow: 0 4px 16px rgba(52, 199, 89, 0.18), 0 4px 16px rgba(0, 122, 255, 0.14); }
-
 /* State indicator dot */
 .state-dot {
   width: 6px; height: 6px;
@@ -1049,7 +1040,6 @@ body {
 .state-dot.sw { background: var(--accent-green); }
 .state-dot.office { background: var(--accent-blue); }
 .state-dot.absent { background: var(--accent-gray); }
-.state-dot.half { background: linear-gradient(135deg, var(--accent-green) 50%, var(--accent-blue) 50%); }
 
 /* ── Result pill ── */
 .result-pill {
@@ -1101,11 +1091,6 @@ body {
   color: var(--text-secondary);
   border: 1px solid var(--border-gray);
 }
-.mini-pill.half {
-  background: linear-gradient(135deg, rgba(52, 199, 89, 0.12) 0%, rgba(0, 122, 255, 0.1) 100%);
-  color: var(--text-primary);
-  border: 1px solid rgba(52, 199, 89, 0.25);
-}
 
 /* ── Legend pills ── */
 .legend-pill {
@@ -1128,11 +1113,6 @@ body {
   background: var(--legend-absent-bg);
   color: var(--text-secondary);
   border: 1px solid var(--border-gray);
-}
-.legend-pill.half {
-  background: linear-gradient(135deg, rgba(52, 199, 89, 0.08) 0%, rgba(0, 122, 255, 0.06) 100%);
-  color: var(--text-primary);
-  border: 1px solid rgba(52, 199, 89, 0.2);
 }
 
 /* ── Animations ── */

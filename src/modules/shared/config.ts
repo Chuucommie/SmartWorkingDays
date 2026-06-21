@@ -10,7 +10,7 @@
 // ── Tipi condivisi ──
 
 /** Stato di un singolo giorno della settimana */
-export type DayState = 'free' | 'sw' | 'office' | 'absent'
+export type DayState = 'free' | 'sw' | 'office' | 'absent' | 'half'
 
 /** Pianificazione settimanale: 5 giorni (Lun-Ven) */
 export type WeekPlan = [DayState, DayState, DayState, DayState, DayState]

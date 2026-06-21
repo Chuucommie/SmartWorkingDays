@@ -9,18 +9,27 @@
 // Per ora fornisce mock data per sviluppo e test.
 // ──────────────────────────────────────────────
 
-import { APP_CONFIG } from './config.js'
-import { getAccessToken } from './msAuth.js'
+import { APP_CONFIG } from './config.ts'
+import { getAccessToken } from './msAuth.ts'
+import type { WeekPlan } from './config.ts'
+
+/** Evento del calendario */
+export interface CalendarEvent {
+  subject?: string
+  start?: { dateTime?: string }
+  end?: { dateTime?: string }
+  showAs?: string
+  categories?: string[]
+  location?: { displayName?: string }
+  isOnlineMeeting?: boolean
+}
 
 /**
  * Recupera gli eventi del calendario per una settimana.
  * In produzione: GET /me/calendar/calendarView.
  * In mock: restituisce eventi fittizi.
- *
- * @param {string} weekStart - Data inizio settimana ISO (YYYY-MM-DD)
- * @returns {Promise<object[]>} Array di eventi calendario
  */
-export async function fetchCalendarWeek(weekStart) {
+export async function fetchCalendarWeek(_weekStart: string): Promise<CalendarEvent[]> {
   if (!APP_CONFIG.features.outlookIntegration) {
     // ── MOCK MODE ──
     console.info('[outlookCalendar] Mock mode — nessun evento')
@@ -32,8 +41,6 @@ export async function fetchCalendarWeek(weekStart) {
   if (!token) throw new Error('Non autenticato')
 
   // TODO: GET https://graph.microsoft.com/v1.0/me/calendar/calendarView
-  //   ?startDateTime={weekStart}T00:00:00&endDateTime={friday}T23:59:59
-  //   &$select=subject,start,end,showAs,categories,location,isOnlineMeeting
   console.warn('[outlookCalendar] Production mode non ancora implementato')
   return []
 }
@@ -48,13 +55,10 @@ export async function fetchCalendarWeek(weekStart) {
  * - showAs === 'busy' + location contiene 'Ufficio'/'Sede' → 'office'
  * - evento 'Smart Working' → 'sw'
  * - nessun evento rilevante → 'free'
- *
- * @param {object[]} events - Eventi calendario
- * @returns {string[]} Array di 5 stati giorno ['free','sw','office','absent']
  */
-export function mapEventsToDayStates(events) {
+export function mapEventsToDayStates(events: CalendarEvent[]): WeekPlan {
   // Inizializza tutti i giorni come 'free'
-  const dayStates = ['free', 'free', 'free', 'free', 'free']
+  const dayStates: WeekPlan = ['free', 'free', 'free', 'free', 'free']
 
   for (const event of events) {
     const eventDate = event.start?.dateTime?.split('T')[0]
@@ -66,7 +70,7 @@ export function mapEventsToDayStates(events) {
     if (dayIndex < 0 || dayIndex > 4) continue // Fuori dalla settimana lavorativa
 
     // Determina lo stato in base al tipo di evento
-    let state = 'free'
+    let state: 'free' | 'sw' | 'office' | 'absent' = 'free'
 
     if (event.showAs === 'oof') {
       state = 'absent'
@@ -94,16 +98,19 @@ export function mapEventsToDayStates(events) {
   return dayStates
 }
 
+/** Risultato creazione eventi SW */
+export interface CreateSWResult {
+  success: boolean
+  eventsCreated: number
+  error?: string
+}
+
 /**
  * Crea eventi "Smart Working" sul calendario per i giorni specificati.
  * In produzione: POST /me/calendar/events per ogni giorno SW.
  * In mock: logga e restituisce successo.
- *
- * @param {string[]} weekPlan - Array di 5 stati
- * @param {string} weekStart - Data inizio settimana ISO
- * @returns {Promise<{success: boolean, eventsCreated: number, error?: string}>}
  */
-export async function createSWEvents(weekPlan, weekStart) {
+export async function createSWEvents(weekPlan: WeekPlan, _weekStart: string): Promise<CreateSWResult> {
   if (!APP_CONFIG.features.outlookIntegration) {
     console.info('[outlookCalendar] Mock — eventi SW non creati (outlook disattivato)')
     return { success: true, eventsCreated: 0 }

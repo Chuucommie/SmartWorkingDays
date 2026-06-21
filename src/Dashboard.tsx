@@ -2,14 +2,23 @@
 // EOS Timesheet — Dashboard
 // ──────────────────────────────────────────────
 import { Link } from 'react-router-dom'
-import { isFeatureEnabled } from './modules/shared/config.js'
+import { isFeatureEnabled } from './modules/shared/config.ts'
+
+interface ModuleCard {
+  title: string
+  description: string
+  icon: string
+  path: string
+  status: 'active' | 'coming-soon'
+  color: string
+}
 
 /**
  * Dashboard principale di EOS Timesheet.
  * Mostra card per ogni modulo disponibile.
  */
 export default function Dashboard() {
-  const modules = [
+  const modules: ModuleCard[] = [
     {
       title: 'Smart Working',
       description: 'Pianifica i tuoi giorni di smart working, visualizza il team, ricevi notifiche sui cambiamenti.',
@@ -51,7 +60,7 @@ export default function Dashboard() {
             key={mod.path}
             to={mod.status === 'active' ? mod.path : '#'}
             className={`module-card ${mod.status}`}
-            style={{ '--card-accent': mod.color }}
+            style={{ '--card-accent': mod.color } as React.CSSProperties}
             onClick={e => {
               if (mod.status !== 'active') e.preventDefault()
             }}

@@ -9,15 +9,20 @@
 // Per ora logga i messaggi in console.
 // ──────────────────────────────────────────────
 
-import { APP_CONFIG } from './config.js'
+import { APP_CONFIG } from './config.ts'
+import type { TeamPlan } from './config.ts'
+
+/** Risultato invio notifica */
+export interface NotifyResult {
+  success: boolean
+  error?: string
+  mock?: boolean
+}
 
 /**
  * Invia un messaggio semplice al canale Teams.
- *
- * @param {string} message - Testo del messaggio (supporta HTML base)
- * @returns {Promise<{success: boolean, error?: string}>}
  */
-export async function notifyChannel(message) {
+export async function notifyChannel(message: string): Promise<NotifyResult> {
   const webhookUrl = APP_CONFIG.teams.webhookUrl
 
   if (!webhookUrl || !APP_CONFIG.features.teamsNotifications) {
@@ -55,19 +60,15 @@ export async function notifyChannel(message) {
     }
     return { success: true }
   } catch (error) {
-    return { success: false, error: error.message }
+    return { success: false, error: (error as Error).message }
   }
 }
 
 /**
  * Invia una Adaptive Card riepilogativa al canale Teams.
  * Mostra la pianificazione settimanale di uno o più membri del team.
- *
- * @param {object[]} teamPlans - Array di pianificazioni { employeeName, week }
- * @param {string} weekStart - Data inizio settimana
- * @returns {Promise<{success: boolean, error?: string}>}
  */
-export async function notifyChannelCard(teamPlans, weekStart) {
+export async function notifyChannelCard(teamPlans: TeamPlan[], weekStart: string): Promise<NotifyResult> {
   const webhookUrl = APP_CONFIG.teams.webhookUrl
 
   if (!webhookUrl || !APP_CONFIG.features.teamsNotifications) {
@@ -97,21 +98,23 @@ export async function notifyChannelCard(teamPlans, weekStart) {
     }
     return { success: true }
   } catch (error) {
-    return { success: false, error: error.message }
+    return { success: false, error: (error as Error).message }
   }
+}
+
+/** Elemento di una Adaptive Card */
+interface AdaptiveCardElement {
+  type: string
+  [key: string]: unknown
 }
 
 /**
  * Costruisce una Adaptive Card riepilogativa.
  * Funzione pura, testabile.
- *
- * @param {object[]} teamPlans
- * @param {string} weekStart
- * @returns {object} Adaptive Card JSON
  */
-export function buildWeeklySummaryCard(teamPlans, weekStart) {
+export function buildWeeklySummaryCard(teamPlans: TeamPlan[], weekStart: string): AdaptiveCardElement {
   const DAY_LABELS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven']
-  const STATE_ICONS = { sw: '🏠', office: '🏢', absent: '✕', free: '◌' }
+  const STATE_ICONS: Record<string, string> = { sw: '🏠', office: '🏢', absent: '✕', free: '◌' }
 
   const memberRows = teamPlans.map(plan => {
     const dayText = plan.week

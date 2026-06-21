@@ -25,7 +25,7 @@ Calcolatore giorni di smart working basato sull'accordo aziendale del 60% delle 
 
 ## 🛠️ Stack
 
-- **React 19** + Vite
+- **React 19** + Vite + **TypeScript**
 - **Tailwind CSS v4**
 - **gh-pages** per deployment su GitHub Pages
 

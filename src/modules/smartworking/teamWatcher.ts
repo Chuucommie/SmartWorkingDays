@@ -10,8 +10,47 @@
 // In sviluppo, usa mock data da config.
 // ──────────────────────────────────────────────
 
-import { fetchEmployeePlan } from '../shared/businessCentral.js'
-import { APP_CONFIG } from '../shared/config.js'
+import { fetchEmployeePlan } from '../shared/businessCentral.ts'
+import { APP_CONFIG } from '../shared/config.ts'
+import type { WeekPlan } from '../shared/config.ts'
+
+/** Notifica di cambiamento stato */
+export interface TeamNotification {
+  employeeId: string
+  employeeName: string
+  timestamp: string
+  changes: DayChange[]
+  read: boolean
+}
+
+/** Cambiamento di un singolo giorno */
+export interface DayChange {
+  day: number
+  label: string
+  from: string
+  to: string
+}
+
+/** Controller del team watcher */
+export interface TeamWatcher {
+  start: () => Promise<void>
+  stop: () => void
+  getNotifications: () => TeamNotification[]
+  getUnreadCount: () => number
+  markRead: (index: number) => void
+  markAllRead: () => void
+  clearAll: () => void
+  addWatched: (employeeId: string) => { success: boolean; error?: string }
+  removeWatched: (employeeId: string) => { success: boolean; error?: string }
+  getWatchedIds: () => string[]
+  isWatched: (employeeId: string) => boolean
+}
+
+/** Stato in cache di un membro */
+interface CachedState {
+  week: WeekPlan
+  hash: string
+}
 
 const WATCHED_KEY = 'sw-watched-members'
 const MAX_WATCHED = APP_CONFIG.limits.maxWatchedMembers
@@ -20,25 +59,21 @@ const POLL_INTERVAL = APP_CONFIG.polling.teamWatcherIntervalMs
 /**
  * Crea un watcher per i membri del team.
  * Restituisce un controller con metodi start/stop e accesso alle notifiche.
- *
- * @param {function} onNotification - Callback chiamata per ogni nuova notifica
- *   Riceve: { employeeId, employeeName, timestamp, changes, read }
- * @returns {{ start, stop, getNotifications, getUnreadCount, markRead, markAllRead, clearAll, addWatched, removeWatched, getWatchedIds, isWatched }}
  */
-export function createTeamWatcher(onNotification) {
+export function createTeamWatcher(onNotification: (n: TeamNotification) => void): TeamWatcher {
   // ── Stato interno ──
-  let timer = null
-  let watchedIds = loadWatchedMembers()
-  const stateCache = new Map() // Map<employeeId, { week, hash }>
-  const notifications = []     // Array di notifiche
+  let timer: ReturnType<typeof setInterval> | null = null
+  let watchedIds: string[] = loadWatchedMembers()
+  const stateCache = new Map<string, CachedState>()
+  const notifications: TeamNotification[] = []
 
   // ── Persistenza localStorage (interna alla closure) ──
 
-  function loadWatchedMembers() {
+  function loadWatchedMembers(): string[] {
     const raw = localStorage.getItem(WATCHED_KEY)
     if (!raw) return []
     try {
-      const parsed = JSON.parse(raw)
+      const parsed: unknown = JSON.parse(raw)
       return Array.isArray(parsed) ? parsed : []
     } catch {
       localStorage.removeItem(WATCHED_KEY)
@@ -46,18 +81,18 @@ export function createTeamWatcher(onNotification) {
     }
   }
 
-  function persistWatched() {
+  function persistWatched(): void {
     localStorage.setItem(WATCHED_KEY, JSON.stringify(watchedIds))
   }
 
   // ── Metodi pubblici ──
 
-  async function start() {
+  async function start(): Promise<void> {
     await initializeCache()
     startPolling()
   }
 
-  function stop() {
+  function stop(): void {
     if (timer) {
       clearInterval(timer)
       timer = null
@@ -67,31 +102,31 @@ export function createTeamWatcher(onNotification) {
     }
   }
 
-  function getNotifications() {
+  function getNotifications(): TeamNotification[] {
     return [...notifications]
   }
 
-  function getUnreadCount() {
+  function getUnreadCount(): number {
     return notifications.filter(n => !n.read).length
   }
 
-  function markRead(index) {
+  function markRead(index: number): void {
     if (notifications[index]) {
       notifications[index].read = true
     }
   }
 
-  function markAllRead() {
+  function markAllRead(): void {
     for (const n of notifications) {
       n.read = true
     }
   }
 
-  function clearAll() {
+  function clearAll(): void {
     notifications.length = 0
   }
 
-  function addWatched(employeeId) {
+  function addWatched(employeeId: string): { success: boolean; error?: string } {
     if (watchedIds.includes(employeeId)) {
       return { success: false, error: 'Già nella lista' }
     }
@@ -104,7 +139,7 @@ export function createTeamWatcher(onNotification) {
     return { success: true }
   }
 
-  function removeWatched(employeeId) {
+  function removeWatched(employeeId: string): { success: boolean; error?: string } {
     const idx = watchedIds.indexOf(employeeId)
     if (idx === -1) {
       return { success: false, error: 'Membro non trovato nella lista' }
@@ -115,24 +150,24 @@ export function createTeamWatcher(onNotification) {
     return { success: true }
   }
 
-  function getWatchedIds() {
+  function getWatchedIds(): string[] {
     return [...watchedIds]
   }
 
-  function isWatched(employeeId) {
+  function isWatched(employeeId: string): boolean {
     return watchedIds.includes(employeeId)
   }
 
   // ── Metodi interni ──
 
-  async function initializeCache() {
+  async function initializeCache(): Promise<void> {
     const weekStart = getCurrentWeekStart()
     for (const id of watchedIds) {
       await fetchAndCache(id, weekStart)
     }
   }
 
-  async function fetchAndCache(employeeId, weekStartOverride) {
+  async function fetchAndCache(employeeId: string, weekStartOverride?: string): Promise<void> {
     const weekStart = weekStartOverride || getCurrentWeekStart()
     try {
       const plan = await fetchEmployeePlan(employeeId, weekStart)
@@ -143,11 +178,11 @@ export function createTeamWatcher(onNotification) {
         })
       }
     } catch (error) {
-      console.warn('[teamWatcher] Fetch fallito per', employeeId, error.message)
+      console.warn('[teamWatcher] Fetch fallito per', employeeId, (error as Error).message)
     }
   }
 
-  async function poll() {
+  async function poll(): Promise<void> {
     const weekStart = getCurrentWeekStart()
     for (const id of watchedIds) {
       try {
@@ -159,7 +194,7 @@ export function createTeamWatcher(onNotification) {
 
         if (cached && cached.hash !== newHash) {
           const changes = diffWeeks(cached.week, plan.week)
-          const notification = {
+          const notification: TeamNotification = {
             employeeId: id,
             employeeName: plan.employeeName || id,
             timestamp: new Date().toISOString(),
@@ -169,25 +204,25 @@ export function createTeamWatcher(onNotification) {
           notifications.unshift(notification)
 
           if (onNotification) {
-            try { onNotification(notification) } catch (e) { /* silenzioso */ }
+            try { onNotification(notification) } catch (_e) { /* silenzioso */ }
           }
         }
 
         stateCache.set(id, { week: plan.week, hash: newHash })
       } catch (error) {
-        console.warn('[teamWatcher] Poll fallito per', id, error.message)
+        console.warn('[teamWatcher] Poll fallito per', id, (error as Error).message)
       }
     }
   }
 
-  function startPolling() {
+  function startPolling(): void {
     timer = setInterval(poll, POLL_INTERVAL)
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', handleVisibility)
     }
   }
 
-  function handleVisibility() {
+  function handleVisibility(): void {
     if (typeof document === 'undefined') return
     if (document.hidden) {
       if (timer) {
@@ -221,23 +256,18 @@ export function createTeamWatcher(onNotification) {
 
 /**
  * Hash semplice per confrontare due settimane.
- * @param {string[]} week - Array di 5 stati
- * @returns {string} Hash (es. "sw|office|office|sw|sw")
  */
-export function hashWeek(week) {
+export function hashWeek(week: WeekPlan): string {
   if (!Array.isArray(week) || week.length !== 5) return ''
   return week.join('|')
 }
 
 /**
  * Calcola le differenze giorno per giorno tra due settimane.
- * @param {string[]} oldWeek - Settimana precedente
- * @param {string[]} newWeek - Settimana corrente
- * @returns {object[]} Array di cambiamenti { day, label, from, to }
  */
-export function diffWeeks(oldWeek, newWeek) {
+export function diffWeeks(oldWeek: WeekPlan, newWeek: WeekPlan): DayChange[] {
   const DAY_LABELS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven']
-  const changes = []
+  const changes: DayChange[] = []
 
   if (!Array.isArray(oldWeek) || !Array.isArray(newWeek)) return changes
   const len = Math.min(oldWeek.length, newWeek.length)
@@ -258,9 +288,8 @@ export function diffWeeks(oldWeek, newWeek) {
 
 /**
  * Restituisce la data di inizio della settimana corrente (lunedì) in formato ISO.
- * @returns {string} YYYY-MM-DD
  */
-export function getCurrentWeekStart() {
+export function getCurrentWeekStart(): string {
   const now = new Date()
   const day = now.getDay()
   const diff = day === 0 ? -6 : 1 - day

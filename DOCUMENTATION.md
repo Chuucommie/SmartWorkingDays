@@ -151,7 +151,7 @@ L'app è progettata per integrarsi con l'ecosistema Microsoft 365. Quando i rife
 | **Outlook** | Importare eventi calendario (ferie, meeting), creare eventi SW |
 | **Teams** | Notificare il canale del team quando qualcuno pianifica |
 
-Per attivare le integrazioni, configurare i valori in `APP_CONFIG` (file `src/modules/shared/config.js`).
+Per attivare le integrazioni, configurare i valori in `APP_CONFIG` (file `src/modules/shared/config.ts`).
 
 ---
 

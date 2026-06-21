@@ -8,6 +8,6 @@ export default defineConfig({
   base: '/SmartWorkingDays/',
   test: {
     environment: 'node',
-    include: ['src/**/*.test.js'],
+    include: ['src/**/*.test.ts'],
   },
 })

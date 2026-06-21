@@ -2,20 +2,33 @@
 // SmartWorkingDays — Logica pura (testabile)
 // ──────────────────────────────────────────────
 
-// Mappatura giorni SW spettanti in base ai giorni effettivamente lavorati
-export const SW_DAYS_MAP = { 5: 3.0, 4: 2.5, 3: 2.0, 2: 1.0, 1: 0.0, 0: 0.0 }
-export const OFFICE_DAYS_MAP = { 5: 2.0, 4: 1.5, 3: 1.0, 2: 1.0, 1: 1.0, 0: 0.0 }
+import type { DayState, WeekPlan } from '../shared/config.ts'
+
+/** Mappatura giorni SW spettanti in base ai giorni effettivamente lavorati */
+export const SW_DAYS_MAP: Record<number, number> = { 5: 3.0, 4: 2.5, 3: 2.0, 2: 1.0, 1: 0.0, 0: 0.0 }
+export const OFFICE_DAYS_MAP: Record<number, number> = { 5: 2.0, 4: 1.5, 3: 1.0, 2: 1.0, 1: 1.0, 0: 0.0 }
+
+/** Una permutazione generata */
+export interface Permutation {
+  week: WeekPlan
+  totalSW: number
+  totalOffice: number
+  valid: boolean
+}
 
 /**
  * Genera TUTTE le 2^k combinazioni per i giorni liberi.
  *
- * @param {string[]} dayStates — array di 5 elementi: 'free' | 'sw' | 'office' | 'absent'
- * @param {number} swTarget — giorni SW target (es. 3.0, 2.5)
- * @param {number} officeTarget — giorni Ufficio target (es. 2.0, 1.5)
- * @returns {{ week: string[], totalSW: number, totalOffice: number, valid: boolean }[]}
+ * @param dayStates — array di 5 elementi: 'free' | 'sw' | 'office' | 'absent'
+ * @param swTarget — giorni SW target (es. 3.0, 2.5)
+ * @param officeTarget — giorni Ufficio target (es. 2.0, 1.5)
  */
-export function generateAllPermutations(dayStates, swTarget, officeTarget) {
-  const freeIndices = []
+export function generateAllPermutations(
+  dayStates: WeekPlan,
+  swTarget: number,
+  officeTarget: number
+): Permutation[] {
+  const freeIndices: number[] = []
   let fixedSW = 0
   let fixedOffice = 0
 
@@ -33,14 +46,14 @@ export function generateAllPermutations(dayStates, swTarget, officeTarget) {
     const totalOffice = fixedOffice
     const swOk = totalSW >= Math.floor(swTarget) && totalSW <= Math.ceil(swTarget)
     const officeOk = totalOffice >= Math.floor(officeTarget) && totalOffice <= Math.ceil(officeTarget)
-    return [{ week: [...dayStates], totalSW, totalOffice, valid: swOk && officeOk }]
+    return [{ week: [...dayStates] as WeekPlan, totalSW, totalOffice, valid: swOk && officeOk }]
   }
 
   const totalCombos = 1 << k // 2^k
-  const all = []
+  const all: Permutation[] = []
 
   for (let mask = 0; mask < totalCombos; mask++) {
-    const week = [...dayStates]
+    const week = [...dayStates] as WeekPlan
     let assignedSW = 0
     let assignedOffice = 0
 

@@ -2,9 +2,10 @@
 // SmartWorkingDays — Campanella notifiche
 // ──────────────────────────────────────────────
 import { useState, useEffect, useRef } from 'react'
-import { createTeamWatcher } from './teamWatcher.js'
+import { createTeamWatcher } from './teamWatcher.ts'
+import type { TeamWatcher, TeamNotification } from './teamWatcher.ts'
 
-const STATE_LABELS = { sw: 'SW', office: 'Ufficio', absent: 'Assenza', free: 'Libero' }
+const STATE_LABELS: Record<string, string> = { sw: 'SW', office: 'Ufficio', absent: 'Assenza', free: 'Libero' }
 
 /**
  * Componente campanella notifiche con badge e dropdown.
@@ -12,14 +13,14 @@ const STATE_LABELS = { sw: 'SW', office: 'Ufficio', absent: 'Assenza', free: 'Li
  */
 export default function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0)
-  const [notifications, setNotifications] = useState([])
+  const [notifications, setNotifications] = useState<TeamNotification[]>([])
   const [isOpen, setIsOpen] = useState(false)
-  const watcherRef = useRef(null)
-  const dropdownRef = useRef(null)
+  const watcherRef = useRef<TeamWatcher | null>(null)
+  const dropdownRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     // Crea watcher e avvia polling
-    const watcher = createTeamWatcher((notification) => {
+    const watcher = createTeamWatcher((_notification: TeamNotification) => {
       // Aggiorna stato React quando arriva una notifica
       setNotifications(watcher.getNotifications())
       setUnreadCount(watcher.getUnreadCount())
@@ -37,8 +38,8 @@ export default function NotificationBell() {
 
   // Chiudi dropdown quando clicchi fuori
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false)
       }
     }
@@ -66,10 +67,10 @@ export default function NotificationBell() {
     }
   }
 
-  const formatTime = (isoString) => {
+  const formatTime = (isoString: string) => {
     const d = new Date(isoString)
     const now = new Date()
-    const diffMs = now - d
+    const diffMs = now.getTime() - d.getTime()
     const diffMin = Math.floor(diffMs / 60000)
 
     if (diffMin < 1) return 'Adesso'

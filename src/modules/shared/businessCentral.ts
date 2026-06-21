@@ -9,18 +9,41 @@
 // Per ora fornisce mock data per sviluppo e test.
 // ──────────────────────────────────────────────
 
-import { APP_CONFIG, getMockTeamPlans } from './config.js'
-import { getAccessToken } from './msAuth.js'
+import { APP_CONFIG, getMockTeamPlans } from './config.ts'
+import { getAccessToken } from './msAuth.ts'
+import type { TeamPlan } from './config.ts'
+
+/** Dati per il salvataggio di una pianificazione */
+export interface PlanningData {
+  employeeId: string
+  weekStart: string
+  week: TeamPlan['week']
+  swDaysRequested: number
+}
+
+/** Risultato salvataggio */
+export interface SaveResult {
+  success: boolean
+  entryId?: string
+  error?: string
+}
+
+/** Entry timesheet */
+export interface TimesheetEntry {
+  employeeId: string
+  weekStart: string
+  day: number
+  hours: number
+  projectCode?: string
+  description?: string
+}
 
 /**
  * Recupera le pianificazioni SW di tutti i dipendenti per una settimana.
  * In produzione: GET OData con $expand=employee.
  * In mock: restituisce dati da config.
- *
- * @param {string} weekStart - Data inizio settimana ISO (YYYY-MM-DD)
- * @returns {Promise<object[]>} Array di pianificazioni
  */
-export async function fetchTeamPlans(weekStart) {
+export async function fetchTeamPlans(weekStart: string): Promise<TeamPlan[]> {
   if (!APP_CONFIG.features.bcIntegration) {
     // ── MOCK MODE ──
     console.info('[businessCentral] Mock mode — usando dati team da config')
@@ -44,12 +67,8 @@ export async function fetchTeamPlans(weekStart) {
 
 /**
  * Recupera la pianificazione di un singolo dipendente per una settimana.
- *
- * @param {string} employeeId - ID dipendente
- * @param {string} weekStart - Data inizio settimana ISO (YYYY-MM-DD)
- * @returns {Promise<object|null>} Pianificazione o null se non trovata
  */
-export async function fetchEmployeePlan(employeeId, weekStart) {
+export async function fetchEmployeePlan(employeeId: string, weekStart: string): Promise<TeamPlan | null> {
   if (!APP_CONFIG.features.bcIntegration) {
     // Mock: cerca nei dati mock
     await new Promise(r => setTimeout(r, 100 + Math.random() * 200))
@@ -66,15 +85,8 @@ export async function fetchEmployeePlan(employeeId, weekStart) {
  * Salva una pianificazione SW su Business Central.
  * In produzione: POST OData sulla tabella custom.
  * In mock: logga e restituisce successo fittizio.
- *
- * @param {object} planning - Dati pianificazione
- * @param {string} planning.employeeId
- * @param {string} planning.weekStart - ISO date
- * @param {string[]} planning.week - Array di 5 stati
- * @param {number} planning.swDaysRequested
- * @returns {Promise<{success: boolean, entryId?: string, error?: string}>}
  */
-export async function savePlanning(planning) {
+export async function savePlanning(planning: PlanningData): Promise<SaveResult> {
   if (!APP_CONFIG.features.bcIntegration) {
     console.info('[businessCentral] Mock save:', planning)
     await new Promise(r => setTimeout(r, 200))
@@ -89,12 +101,8 @@ export async function savePlanning(planning) {
 /**
  * Recupera il timesheet (ore lavorate) di un dipendente per una settimana.
  * Placeholder per il modulo Timesheet futuro.
- *
- * @param {string} employeeId
- * @param {string} weekStart
- * @returns {Promise<object[]>} Array di entry timesheet
  */
-export async function fetchTimesheet(employeeId, weekStart) {
+export async function fetchTimesheet(_employeeId: string, _weekStart: string): Promise<TimesheetEntry[]> {
   if (!APP_CONFIG.features.bcIntegration) {
     console.info('[businessCentral] Mock timesheet — vuoto')
     return []
@@ -107,11 +115,8 @@ export async function fetchTimesheet(employeeId, weekStart) {
 /**
  * Salva una entry timesheet su Business Central.
  * Placeholder per il modulo Timesheet futuro.
- *
- * @param {object} entry - Dati timesheet
- * @returns {Promise<{success: boolean, error?: string}>}
  */
-export async function saveTimesheetEntry(entry) {
+export async function saveTimesheetEntry(entry: TimesheetEntry): Promise<SaveResult> {
   if (!APP_CONFIG.features.bcIntegration) {
     console.info('[businessCentral] Mock timesheet save:', entry)
     return { success: true }

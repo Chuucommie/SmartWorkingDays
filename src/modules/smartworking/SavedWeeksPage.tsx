@@ -3,19 +3,25 @@
 // ──────────────────────────────────────────────
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { loadAll, remove, rename, exportAll, importFromJSON } from './savedWeeks.js'
+import { loadAll, remove, rename, exportAll, importFromJSON } from './savedWeeks.ts'
+import type { SavedTemplate } from './savedWeeks.ts'
 
-const STATE_COLORS = { sw: '#34C759', office: '#007AFF', absent: '#8E8E93', free: '#E5E5EA' }
+const STATE_COLORS: Record<string, string> = { sw: '#34C759', office: '#007AFF', absent: '#8E8E93', free: '#E5E5EA' }
+
+interface FeedbackMessage {
+  type: 'success' | 'error'
+  text: string
+}
 
 /**
  * Pagina per gestire i template settimanali salvati.
  * Carica, rinomina, elimina, esporta e importa template.
  */
 export default function SavedWeeksPage() {
-  const [templates, setTemplates] = useState([])
-  const [editingId, setEditingId] = useState(null)
+  const [templates, setTemplates] = useState<SavedTemplate[]>([])
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
-  const [message, setMessage] = useState(null) // { type: 'success'|'error', text }
+  const [message, setMessage] = useState<FeedbackMessage | null>(null)
   const navigate = useNavigate()
 
   // Carica template all'avvio
@@ -24,37 +30,38 @@ export default function SavedWeeksPage() {
   }, [])
 
   // Mostra messaggio temporaneo
-  const showMessage = (type, text) => {
+  const showMessage = (type: 'success' | 'error', text: string) => {
     setMessage({ type, text })
     setTimeout(() => setMessage(null), 3000)
   }
 
   // Carica un template nell'app SW
-  const handleLoad = (template) => {
+  const handleLoad = (template: SavedTemplate) => {
     // Passa i dati tramite sessionStorage (semplice, senza librerie di stato globali)
     sessionStorage.setItem('sw-load-template', JSON.stringify(template))
     navigate('/smartworking')
   }
 
   // Elimina template
-  const handleDelete = (id) => {
+  const handleDelete = (id: string) => {
     const result = remove(id)
     if (result.success) {
       setTemplates(loadAll())
       showMessage('success', 'Template eliminato')
     } else {
-      showMessage('error', result.error)
+      showMessage('error', result.error || 'Errore sconosciuto')
     }
   }
 
   // Inizia rinomina
-  const startRename = (template) => {
+  const startRename = (template: SavedTemplate) => {
     setEditingId(template.id)
     setEditName(template.name)
   }
 
   // Conferma rinomina
   const confirmRename = () => {
+    if (!editingId) return
     const result = rename(editingId, editName)
     if (result.success) {
       setTemplates(loadAll())
@@ -62,7 +69,7 @@ export default function SavedWeeksPage() {
       setEditName('')
       showMessage('success', 'Template rinominato')
     } else {
-      showMessage('error', result.error)
+      showMessage('error', result.error || 'Errore sconosciuto')
     }
   }
 
@@ -86,18 +93,18 @@ export default function SavedWeeksPage() {
   }
 
   // Importa template da file
-  const handleImport = (event) => {
-    const file = event.target.files[0]
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
     if (!file) return
 
     const reader = new FileReader()
     reader.onload = (e) => {
-      const result = importFromJSON(e.target.result)
+      const result = importFromJSON(e.target?.result as string)
       if (result.success) {
         setTemplates(loadAll())
         showMessage('success', `Importati ${result.added} template (totale: ${result.total})`)
       } else {
-        showMessage('error', result.error)
+        showMessage('error', result.error || 'Errore sconosciuto')
       }
     }
     reader.readAsText(file)
@@ -105,7 +112,7 @@ export default function SavedWeeksPage() {
   }
 
   // Formatta data
-  const formatDate = (isoString) => {
+  const formatDate = (isoString: string) => {
     const d = new Date(isoString)
     return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })
   }

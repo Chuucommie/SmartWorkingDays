@@ -3,26 +3,27 @@
 // ──────────────────────────────────────────────
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { getTeamView, computeOfficeOverlaps } from './teamView.js'
-import { createTeamWatcher } from './teamWatcher.js'
-import { getCurrentWeekStart } from './teamWatcher.js'
+import { getTeamView, computeOfficeOverlaps } from './teamView.ts'
+import type { TeamViewResult, OfficeOverlaps } from './teamView.ts'
+import { createTeamWatcher, getCurrentWeekStart } from './teamWatcher.ts'
+import type { TeamWatcher } from './teamWatcher.ts'
 
-const DAY_LABELS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven']
-const STATE_ICONS = { sw: '🏠', office: '🏢', absent: '✕', free: '◌' }
-const STATE_LABELS = { sw: 'SW', office: 'Ufficio', absent: 'Assenza', free: 'Libero' }
+const DAY_LABELS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven'] as const
+const STATE_ICONS: Record<string, string> = { sw: '🏠', office: '🏢', absent: '✕', free: '◌' }
+const STATE_LABELS: Record<string, string> = { sw: 'SW', office: 'Ufficio', absent: 'Assenza', free: 'Libero' }
 
 /**
  * Pagina che mostra le pianificazioni SW del team
  * e le coincidenze in ufficio.
  */
 export default function TeamViewPage() {
-  const [teamData, setTeamData] = useState(null)
-  const [overlaps, setOverlaps] = useState({})
+  const [teamData, setTeamData] = useState<TeamViewResult | null>(null)
+  const [overlaps, setOverlaps] = useState<OfficeOverlaps>({})
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null)
   const [weekStart, setWeekStart] = useState(getCurrentWeekStart())
-  const [watcher, setWatcher] = useState(null)
-  const [watchedIds, setWatchedIds] = useState([])
+  const [watcher, setWatcher] = useState<TeamWatcher | null>(null)
+  const [watchedIds, setWatchedIds] = useState<string[]>([])
 
   // Carica dati team
   const loadTeamData = useCallback(async () => {
@@ -33,7 +34,7 @@ export default function TeamViewPage() {
       setTeamData(data)
       setOverlaps(computeOfficeOverlaps(data.myPlan, data.colleagues))
     } catch (err) {
-      setError(err.message || 'Errore nel caricamento dei dati del team')
+      setError((err as Error).message || 'Errore nel caricamento dei dati del team')
     } finally {
       setLoading(false)
     }
@@ -45,7 +46,7 @@ export default function TeamViewPage() {
 
   // Inizializza watcher per notifiche
   useEffect(() => {
-    const w = createTeamWatcher()
+    const w = createTeamWatcher(() => {})
     w.start()
     setWatcher(w)
     setWatchedIds(w.getWatchedIds())
@@ -53,14 +54,14 @@ export default function TeamViewPage() {
   }, [])
 
   // Naviga settimana
-  const changeWeek = (direction) => {
+  const changeWeek = (direction: number) => {
     const d = new Date(weekStart)
     d.setDate(d.getDate() + direction * 7)
     setWeekStart(d.toISOString().split('T')[0])
   }
 
   // Toggle watch
-  const toggleWatch = (employeeId) => {
+  const toggleWatch = (employeeId: string) => {
     if (!watcher) return
     if (watcher.isWatched(employeeId)) {
       watcher.removeWatched(employeeId)

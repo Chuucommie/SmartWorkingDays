@@ -3,7 +3,7 @@ import {
   SW_DAYS_MAP,
   OFFICE_DAYS_MAP,
   generateAllPermutations,
-} from './smartworking.js'
+} from './smartworking.ts'
 
 // ──────────────────────────────────────────────
 // 1. MAPPE GIORNI LAVORATI → SW / UFFICIO

@@ -7,11 +7,76 @@
 // basta sostituire i valori mock con quelli dell'ambiente target.
 // ──────────────────────────────────────────────
 
+// ── Tipi condivisi ──
+
+/** Stato di un singolo giorno della settimana */
+export type DayState = 'free' | 'sw' | 'office' | 'absent'
+
+/** Pianificazione settimanale: 5 giorni (Lun-Ven) */
+export type WeekPlan = [DayState, DayState, DayState, DayState, DayState]
+
+/** Dati di un dipendente */
+export interface EmployeeData {
+  employeeId: string
+  employeeName: string
+  department: string
+  locationCode: string
+  email: string
+}
+
+/** Pianificazione di un membro del team per una settimana */
+export interface TeamPlan {
+  employeeId: string
+  employeeName: string
+  department: string
+  locationCode: string
+  week: WeekPlan
+  swDaysRequested: number
+}
+
+/** Configurazione completa dell'applicazione */
+export interface AppConfig {
+  appName: string
+  appVersion: string
+  smartWorking: {
+    ratio: number
+    daysMap: Record<number, number>
+    officeDaysMap: Record<number, number>
+  }
+  entraId: {
+    clientId: string
+    authority: string
+    redirectUri: string
+    scopes: string[]
+  }
+  businessCentral: {
+    baseUrl: string
+    companyId: string
+    planningTableName: string
+    timesheetTableName: string
+  }
+  graph: {
+    baseUrl: string
+  }
+  teams: {
+    webhookUrl: string
+  }
+  features: Record<string, boolean>
+  polling: {
+    teamWatcherIntervalMs: number
+    minApiIntervalMs: number
+  }
+  limits: {
+    maxSavedWeeks: number
+    maxWatchedMembers: number
+  }
+}
+
 /**
  * Configurazione dell'applicazione.
  * Modificare questo file per adattare l'app a un tenant specifico.
  */
-export const APP_CONFIG = {
+export const APP_CONFIG: AppConfig = {
   // ── Identità app ──
   appName: 'EOS Timesheet',
   appVersion: '3.0.0',
@@ -104,18 +169,16 @@ export const APP_CONFIG = {
 
 /**
  * Verifica se una feature è attiva.
- * @param {string} featureName - Nome della feature in APP_CONFIG.features
- * @returns {boolean}
  */
-export function isFeatureEnabled(featureName) {
-  return APP_CONFIG.features[featureName] === true
+export function isFeatureEnabled(featureName: string): boolean {
+  return (APP_CONFIG.features as Record<string, boolean>)[featureName] === true
 }
 
 /**
  * Restituisce i dati mock per un dipendente (usato in assenza di BC).
  * Sostituire con chiamata reale a BC OData quando l'integrazione è attiva.
  */
-export function getMockEmployeeData() {
+export function getMockEmployeeData(): EmployeeData {
   return {
     employeeId: 'EMP001',
     employeeName: 'Ricardo Quintero',
@@ -129,7 +192,7 @@ export function getMockEmployeeData() {
  * Restituisce dati mock per i membri del team (usato in assenza di BC).
  * Sostituire con chiamata reale a BC OData quando l'integrazione è attiva.
  */
-export function getMockTeamMembers() {
+export function getMockTeamMembers(): EmployeeData[] {
   return [
     {
       employeeId: 'EMP001',
@@ -173,7 +236,7 @@ export function getMockTeamMembers() {
  * Restituisce dati mock per le pianificazioni SW del team.
  * In produzione, questi dati arrivano da BC OData.
  */
-export function getMockTeamPlans(weekStart) {
+export function getMockTeamPlans(_weekStart: string): TeamPlan[] {
   // Simula pianificazioni diverse per ogni membro
   return [
     {

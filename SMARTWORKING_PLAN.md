@@ -261,7 +261,7 @@ src/
 │  ┌──────────────────────────────────────────────────────┐   │
 │  │                 Moduli condivisi                      │   │
 │  │  msAuth.js │ businessCentral.js │ outlookCalendar.js │   │
-│  │  teamsNotify.js │ config.js                          │   │
+│  │  teamsNotify.js │ config.ts                          │   │
 │  └──────────────────────────────────────────────────────┘   │
 │                                                              │
 │  ┌──────────────────┐  ┌──────────────┐  ┌──────────────┐   │
@@ -297,7 +297,7 @@ src/
 | 1.3 | Spostare `smartworking.js` e `smartworking.test.js` in `src/modules/smartworking/` | Spostamento file | 51 test devono passare |
 | 1.4 | Creare `src/App.jsx` come router principale con React Router | Nuovo file | Test routing |
 | 1.5 | Spostare `index.css` stili specifici SW in `src/modules/smartworking/SmartWorking.css` | Nuovo file | Build CSS corretto |
-| 1.6 | Aggiornare `vite.config.js` per supportare alias `@/` → `src/` | `vite.config.js` | Build funzionante |
+| 1.6 | Aggiornare `vite.config.ts` per supportare alias `@/` → `src/` | `vite.config.ts` | Build funzionante |
 | 1.7 | Verificare che l'app funzioni esattamente come prima su `/smartworking` | — | Test manuale + 51 test |
 
 **Criterio di accettazione:**
@@ -403,7 +403,7 @@ src/
 | 5.1 | Aggiornare `App.jsx` router con rotta `/` → dashboard EOS Timesheet (placeholder elegante) | `App.jsx` | — |
 | 5.2 | Creare dashboard EOS Timesheet: card "Smart Working", "Timesheet" (coming soon), "Report" (coming soon) | Nuovo componente | — |
 | 5.3 | Aggiornare `package.json` homepage a `/EOSTimesheet/` (o mantenere `/SmartWorkingDays/` con redirect) | `package.json` | Build + deploy |
-| 5.4 | Aggiornare `vite.config.js` base path | `vite.config.js` | Build |
+| 5.4 | Aggiornare `vite.config.ts` base path | `vite.config.ts` | Build |
 | 5.5 | Verificare navigazione: dashboard → SmartWorking → Team → Saved → dashboard | — | Test manuale |
 | 5.6 | Aggiornare README.md con nuova struttura | `README.md` | — |
 
@@ -462,7 +462,7 @@ src/
 │       ├── businessCentral.js        ✨ NUOVO — client BC OData (da INTEGRATION.md)
 │       ├── outlookCalendar.js        ✨ NUOVO — client Graph (da INTEGRATION.md)
 │       ├── teamsNotify.js            ✨ NUOVO — notifiche Teams (da INTEGRATION.md)
-│       └── config.js                 ✨ NUOVO — configurazione app
+│       └── config.ts                 ✨ NUOVO — configurazione app
 │
 ├── App.jsx                           (router principale)
 ├── Dashboard.jsx                     ✨ NUOVO — dashboard EOS Timesheet
@@ -472,7 +472,7 @@ src/
 
 **Totale nuovi file:** 15  
 **Totale nuovi test:** ~50 (in aggiunta ai 51 esistenti)  
-**File modificati:** 5 (App.jsx, package.json, vite.config.js, README.md, index.css)
+**File modificati:** 5 (App.jsx, package.json, vite.config.ts, README.md, index.css)
 
 ---
 

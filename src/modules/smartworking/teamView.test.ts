@@ -3,7 +3,7 @@ import {
   computeOfficeOverlaps,
   computeFullOverlapMatrix,
   bcPlanToInternal,
-} from './teamView.js'
+} from './teamView.ts'
 
 describe('teamView', () => {
   describe('computeOfficeOverlaps()', () => {

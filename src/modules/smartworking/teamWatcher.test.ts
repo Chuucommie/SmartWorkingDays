@@ -4,7 +4,7 @@ import {
   diffWeeks,
   getCurrentWeekStart,
   createTeamWatcher,
-} from './teamWatcher.js'
+} from './teamWatcher.ts'
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -18,11 +18,11 @@ const localStorageMock = (() => {
 })()
 
 // Mock fetchEmployeePlan per evitare chiamate reali
-vi.mock('../shared/businessCentral.js', () => ({
+vi.mock('../shared/businessCentral.ts', () => ({
   fetchEmployeePlan: vi.fn(),
 }))
 
-import { fetchEmployeePlan } from '../shared/businessCentral.js'
+import { fetchEmployeePlan } from '../shared/businessCentral.ts'
 
 beforeEach(() => {
   global.localStorage = localStorageMock

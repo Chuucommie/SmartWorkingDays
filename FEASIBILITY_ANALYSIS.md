@@ -979,7 +979,7 @@ src/
 │   │   └── TimesheetApp.jsx       (componente "In sviluppo")
 │   │
 │   └── shared/
-│       ├── config.js
+│       ├── config.ts
 │       └── (msAuth, businessCentral, etc. — futuri)
 │
 ├── App.jsx                        (router principale)
@@ -1145,7 +1145,7 @@ export default function TimesheetApp() {
 #### Step 6: Configurazione Vite
 
 ```javascript
-// vite.config.js — aggiunta alias
+// vite.config.ts — aggiunta alias
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'

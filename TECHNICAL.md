@@ -30,33 +30,34 @@
 ┌─────────────────────────────────────────────────────────┐
 │                    EOS Timesheet (SPA)                   │
 │                                                          │
-│  main.jsx → HashRouter → App.jsx (router principale)    │
+│  main.tsx → HashRouter → App.tsx (router principale)    │
 │                                                          │
 │  Routes:                                                 │
-│  /              → Dashboard.jsx                          │
+│  /              → Dashboard.tsx                          │
 │  /smartworking  → modules/smartworking/SmartWorkingApp  │
-│  /smartworking/team   → TeamViewPage.jsx                │
-│  /smartworking/saved  → SavedWeeksPage.jsx              │
+│  /smartworking/team   → TeamViewPage.tsx                │
+│  /smartworking/saved  → SavedWeeksPage.tsx              │
 │  /timesheet     → modules/timesheet/TimesheetApp        │
 │                                                          │
 │  Moduli condivisi (shared/):                             │
-│  config.js | msAuth.js | businessCentral.js              │
-│  outlookCalendar.js | teamsNotify.js                     │
+│  config.ts | msAuth.ts | businessCentral.ts              │
+│  outlookCalendar.ts | teamsNotify.ts                     │
 │                                                          │
 │  Moduli SmartWorking:                                    │
-│  smartworking.js (logica permutazioni)                   │
-│  savedWeeks.js (template localStorage)                   │
-│  teamView.js (vista team + coincidenze)                  │
-│  teamWatcher.js (polling notifiche)                      │
-│  NotificationBell.jsx (UI campanella)                    │
+│  smartworking.ts (logica permutazioni)                   │
+│  savedWeeks.ts (template localStorage)                   │
+│  teamView.ts (vista team + coincidenze)                  │
+│  teamWatcher.ts (polling notifiche)                      │
+│  NotificationBell.tsx (UI campanella)                    │
 └─────────────────────────────────────────────────────────┘
 ```
 
 **Principi architetturali:**
-- **Moduli puri** (`.js`) separati dalla **UI** (`.jsx`) — logica testabile senza DOM
+- **Moduli puri** (`.ts`) separati dalla **UI** (`.tsx`) — logica testabile senza DOM
 - **Stub pattern**: ogni integrazione esterna ha un modulo stub che usa mock data finché non vengono configurati i riferimenti reali
-- **Configurazione centralizzata**: tutti i riferimenti agli ambienti in `config.js`
+- **Configurazione centralizzata**: tutti i riferimenti agli ambienti in `config.ts`
 - **HashRouter**: compatibile con GitHub Pages (no 404 su refresh)
+- **TypeScript**: type safety su tutta la codebase, interfacce esplicite per ogni struttura dati
 
 ---
 
@@ -66,6 +67,7 @@
 SmartWorkingDays/
 ├── index.html                     # Entry point HTML
 ├── package.json                   # Dipendenze e script
+├── tsconfig.json                  # Configurazione TypeScript
 ├── vite.config.js                 # Configurazione Vite + Vitest
 ├── README.md                      # Readme originale
 ├── DOCUMENTATION.md               # Documentazione funzionale (utente)
@@ -79,35 +81,36 @@ SmartWorkingDays/
 ├── dist/                          # Build output (generato)
 │
 └── src/
-    ├── main.jsx                   # Entry point React
-    ├── App.jsx                    # Router principale
-    ├── Dashboard.jsx              # Dashboard EOS Timesheet
+    ├── main.tsx                   # Entry point React
+    ├── App.tsx                    # Router principale
+    ├── Dashboard.tsx              # Dashboard EOS Timesheet
     ├── index.css                  # Stili globali (Tailwind + custom)
     │
     └── modules/
         ├── shared/                # Moduli condivisi tra tutti i moduli
-        │   ├── config.js          # Configurazione centralizzata + mock data
-        │   ├── msAuth.js          # Autenticazione Microsoft (stub)
-        │   ├── businessCentral.js # Client BC OData (stub)
-        │   ├── outlookCalendar.js # Client Outlook Graph (stub)
-        │   └── teamsNotify.js     # Notifiche Teams webhook (stub)
+        │   ├── config.ts          # Configurazione centralizzata + mock data
+        │   ├── msAuth.ts          # Autenticazione Microsoft (stub)
+        │   ├── businessCentral.ts # Client BC OData (stub)
+        │   ├── outlookCalendar.ts # Client Outlook Graph (stub)
+        │   ├── teamsNotify.ts     # Notifiche Teams webhook (stub)
+        │   └── ThemeProvider.tsx   # Provider tema dark/light
         │
         ├── smartworking/          # Modulo Smart Working
-        │   ├── smartworking.js    # Logica pura: mappe SW, permutazioni
-        │   ├── smartworking.test.js # 51 test
-        │   ├── SmartWorkingApp.jsx # UI principale pianificazione
-        │   ├── savedWeeks.js      # CRUD template localStorage
-        │   ├── savedWeeks.test.js # 27 test
-        │   ├── SavedWeeksPage.jsx # UI gestione template
-        │   ├── teamView.js        # Vista team + coincidenze
-        │   ├── teamView.test.js   # 12 test
-        │   ├── TeamViewPage.jsx   # UI vista team
-        │   ├── teamWatcher.js     # Polling notifiche cambi stato
-        │   ├── teamWatcher.test.js # 22 test
-        │   └── NotificationBell.jsx # UI campanella notifiche
+        │   ├── smartworking.ts    # Logica pura: mappe SW, permutazioni
+        │   ├── smartworking.test.ts # 51 test
+        │   ├── SmartWorkingApp.tsx # UI principale pianificazione
+        │   ├── savedWeeks.ts      # CRUD template localStorage
+        │   ├── savedWeeks.test.ts # 27 test
+        │   ├── SavedWeeksPage.tsx # UI gestione template
+        │   ├── teamView.ts        # Vista team + coincidenze
+        │   ├── teamView.test.ts   # 12 test
+        │   ├── TeamViewPage.tsx   # UI vista team
+        │   ├── teamWatcher.ts     # Polling notifiche cambi stato
+        │   ├── teamWatcher.test.ts # 22 test
+        │   └── NotificationBell.tsx # UI campanella notifiche
         │
         └── timesheet/             # Modulo Timesheet (placeholder)
-            └── TimesheetApp.jsx   # UI "In sviluppo"
+            └── TimesheetApp.tsx   # UI "In sviluppo"
 ```
 
 ---
@@ -116,21 +119,23 @@ SmartWorkingDays/
 
 ### 3.1 Shared (condivisi)
 
-#### `config.js` — Configurazione centralizzata
+#### `config.ts` — Configurazione centralizzata
 
 **Esporta:**
 | Nome | Tipo | Descrizione |
 |---|---|---|
-| `APP_CONFIG` | `object` | Configurazione completa dell'app (regola SW, Entra ID, BC, Graph, Teams, feature flags, limiti) |
-| `isFeatureEnabled(name)` | `function` | Verifica se una feature è attiva |
-| `getMockEmployeeData()` | `function` | Dati mock dipendente corrente |
-| `getMockTeamMembers()` | `function` | Dati mock membri team (5 dipendenti) |
-| `getMockTeamPlans(weekStart)` | `function` | Dati mock pianificazioni SW |
+| `APP_CONFIG` | `AppConfig` | Configurazione completa dell'app (regola SW, Entra ID, BC, Graph, Teams, feature flags, limiti) |
+| `isFeatureEnabled(name)` | `(string) => boolean` | Verifica se una feature è attiva |
+| `getMockEmployeeData()` | `() => EmployeeData` | Dati mock dipendente corrente |
+| `getMockTeamMembers()` | `() => EmployeeData[]` | Dati mock membri team (5 dipendenti) |
+| `getMockTeamPlans(weekStart)` | `(string) => TeamPlan[]` | Dati mock pianificazioni SW |
+
+**Tipi esportati:** `DayState`, `WeekPlan`, `EmployeeData`, `TeamPlan`, `AppConfig`
 
 **Pattern:** Tutti i valori specifici dell'ambiente (client ID, tenant ID, company ID, webhook URL) sono placeholder. Per attivare un'integrazione reale, sostituire i placeholder con i valori reali e impostare il feature flag a `true`.
 
 **Feature flags:**
-```javascript
+```typescript
 features: {
   smartWorking: true,        // Modulo SW (sempre attivo)
   teamView: true,            // Vista team
@@ -143,7 +148,7 @@ features: {
 }
 ```
 
-#### `msAuth.js` — Autenticazione Microsoft (stub)
+#### `msAuth.ts` — Autenticazione Microsoft (stub)
 
 **Esporta:**
 | Nome | Descrizione |
@@ -157,13 +162,13 @@ features: {
 | `getCurrentEmployeeId()` | ID dipendente corrente |
 | `onAuthChange(listener)` | Registra callback per cambiamenti auth |
 
-**Stato auth:**
-```javascript
+**Stato auth (interfaccia `AuthState`):**
+```typescript
 {
   isAuthenticated: boolean,
-  account: { username, name } | null,
+  account: { username: string, name: string } | null,
   accessToken: string | null,
-  userProfile: { employeeId, employeeName, department, locationCode, email } | null,
+  userProfile: EmployeeData | null,
 }
 ```
 
@@ -171,7 +176,7 @@ features: {
 
 **Production mode:** Quando `clientId` è configurato, userà MSAL.js per OAuth PKCE. Da implementare.
 
-#### `businessCentral.js` — Client BC OData (stub)
+#### `businessCentral.ts` — Client BC OData (stub)
 
 **Esporta:**
 | Nome | Descrizione |
@@ -188,7 +193,7 @@ features: {
 - `GET /companies({id})/customTable_SWPlanning?$filter=...&$expand=employee`
 - `POST /companies({id})/customTable_SWPlanning`
 
-#### `outlookCalendar.js` — Client Outlook Graph (stub)
+#### `outlookCalendar.ts` — Client Outlook Graph (stub)
 
 **Esporta:**
 | Nome | Descrizione |
@@ -204,7 +209,7 @@ features: {
 - `showAs === 'busy'` + location contiene "Ufficio"/"Sede" → `office`
 - Nessun evento → `free`
 
-#### `teamsNotify.js` — Notifiche Teams (stub)
+#### `teamsNotify.ts` — Notifiche Teams (stub)
 
 **Esporta:**
 | Nome | Descrizione |
@@ -219,7 +224,7 @@ features: {
 
 ### 3.2 SmartWorking
 
-#### `smartworking.js` — Logica pura permutazioni
+#### `smartworking.ts` — Logica pura permutazioni
 
 **Esporta:**
 | Nome | Descrizione |
@@ -230,9 +235,9 @@ features: {
 
 **Algoritmo:** Bitmask loop su `k` giorni liberi. Per ogni combinazione, assegna `sw` (bit=1) o `office` (bit=0). Filtra con `floor/ceil` sui target.
 
-**Test:** 51 test in `smartworking.test.js` — copertura completa di mappe, permutazioni, validità, unicità, proprietà invarianti.
+**Test:** 51 test in `smartworking.test.ts` — copertura completa di mappe, permutazioni, validità, unicità, proprietà invarianti.
 
-#### `savedWeeks.js` — Template salvati (localStorage)
+#### `savedWeeks.ts` — Template salvati (localStorage)
 
 **Esporta:**
 | Nome | Descrizione |
@@ -247,9 +252,9 @@ features: {
 
 **Storage:** `localStorage` chiave `sw-saved-weeks`. Max 20 template. Nomi case-insensitive unici.
 
-**Test:** 27 test in `savedWeeks.test.js` — validazione, limiti, duplicati, import/export, corruzione dati.
+**Test:** 27 test in `savedWeeks.test.ts` — validazione, limiti, duplicati, import/export, corruzione dati.
 
-#### `teamView.js` — Vista team e coincidenze
+#### `teamView.ts` — Vista team e coincidenze
 
 **Esporta:**
 | Nome | Descrizione |
@@ -261,9 +266,9 @@ features: {
 
 **Filtro team:** stesso `department` e stessa `locationCode` dell'utente corrente.
 
-**Test:** 12 test in `teamView.test.js` — overlaps, matrice, conversione BC.
+**Test:** 12 test in `teamView.test.ts` — overlaps, matrice, conversione BC.
 
-#### `teamWatcher.js` — Polling notifiche
+#### `teamWatcher.ts` — Polling notifiche
 
 **Esporta:**
 | Nome | Descrizione |
@@ -273,22 +278,28 @@ features: {
 | `diffWeeks(oldWeek, newWeek)` | Differenze giorno per giorno (pura) |
 | `getCurrentWeekStart()` | Data inizio settimana corrente (pura) |
 
-**Controller restituito:**
-```javascript
+**Controller restituito (interfaccia `TeamWatcher`):**
+```typescript
 {
-  start(), stop(),
-  getNotifications(), getUnreadCount(),
-  markRead(index), markAllRead(), clearAll(),
-  addWatched(employeeId), removeWatched(employeeId),
-  getWatchedIds(), isWatched(employeeId),
+  start(): Promise<void>
+  stop(): void
+  getNotifications(): TeamNotification[]
+  getUnreadCount(): number
+  markRead(index: number): void
+  markAllRead(): void
+  clearAll(): void
+  addWatched(employeeId: string): { success: boolean; error?: string }
+  removeWatched(employeeId: string): { success: boolean; error?: string }
+  getWatchedIds(): string[]
+  isWatched(employeeId: string): boolean
 }
 ```
 
 **Polling:** ogni 5 minuti (`APP_CONFIG.polling.teamWatcherIntervalMs`). In pausa quando il tab non è visibile (Visibility API).
 
-**Test:** 22 test in `teamWatcher.test.js` — hash, diff, watch list CRUD, persistenza, notifiche.
+**Test:** 22 test in `teamWatcher.test.ts` — hash, diff, watch list CRUD, persistenza, notifiche.
 
-#### `SmartWorkingApp.jsx` — UI pianificazione
+#### `SmartWorkingApp.tsx` — UI pianificazione
 
 Componente React principale del modulo SW. Contiene:
 - Selettore giorni (5 pill button con 4 stati)
@@ -299,7 +310,7 @@ Componente React principale del modulo SW. Contiene:
 
 **Stato:** `useState` per dayStates, selectedPerm, showAll. `useMemo` per permutazioni.
 
-#### `TeamViewPage.jsx` — UI vista team
+#### `TeamViewPage.tsx` — UI vista team
 
 - Tabella con righe per ogni membro (te stesso + colleghi)
 - Badge coincidenze 👥+N con tooltip
@@ -307,7 +318,7 @@ Componente React principale del modulo SW. Contiene:
 - Checkbox "Segui" per attivare notifiche
 - Gestione stati: loading, error, vuoto
 
-#### `SavedWeeksPage.jsx` — UI template salvati
+#### `SavedWeeksPage.tsx` — UI template salvati
 
 - Lista template con pallini colorati per giorni
 - Azioni: Carica, Rinomina (doppio clic), Elimina
@@ -315,7 +326,7 @@ Componente React principale del modulo SW. Contiene:
 - Importa JSON (upload file)
 - Feedback con messaggi temporanei
 
-#### `NotificationBell.jsx` — UI campanella notifiche
+#### `NotificationBell.tsx` — UI campanella notifiche
 
 - Badge rosso con conteggio notifiche non lette
 - Dropdown con elenco notifiche
@@ -327,7 +338,7 @@ Componente React principale del modulo SW. Contiene:
 
 ### 3.3 Timesheet
 
-#### `TimesheetApp.jsx` — Placeholder
+#### `TimesheetApp.tsx` — Placeholder
 
 Pagina "In sviluppo" con:
 - Icona, titolo, descrizione
@@ -338,19 +349,21 @@ Pagina "In sviluppo" con:
 
 ### 3.4 Root
 
-#### `main.jsx` — Entry point
+#### `main.tsx` — Entry point
 
-```jsx
+```tsx
 <HashRouter>
-  <App />
+  <ThemeProvider>
+    <App />
+  </ThemeProvider>
 </HashRouter>
 ```
 
 HashRouter per compatibilità GitHub Pages.
 
-#### `App.jsx` — Router principale
+#### `App.tsx` — Router principale
 
-```jsx
+```tsx
 <Routes>
   <Route path="/" element={<Dashboard />} />
   <Route path="/smartworking" element={<SmartWorkingApp />} />
@@ -362,7 +375,7 @@ HashRouter per compatibilità GitHub Pages.
 
 Navbar globale con link ai moduli attivi (basati su `isFeatureEnabled()`).
 
-#### `Dashboard.jsx` — Dashboard
+#### `Dashboard.tsx` — Dashboard
 
 Card per ogni modulo con:
 - Icona, titolo, descrizione
@@ -378,9 +391,8 @@ Framework: **Tailwind CSS 4** con tema personalizzato (colori Apple-style). Clas
 - Team view (tabella, badge coincidenze, watch button)
 - Saved weeks (lista template, pallini, azioni)
 - Notification bell (dropdown, badge, item)
-- Smart working (day pills, perm rows, result pill — invariati da v2)
+- Smart working (day pills, perm rows, result pill)
 - Placeholder page
-- Toast notifications
 - Responsive (max-width 480px)
 
 ---
@@ -390,21 +402,21 @@ Framework: **Tailwind CSS 4** con tema personalizzato (colori Apple-style). Clas
 ### Flusso attuale (mock mode)
 
 ```
-1. App si avvia → main.jsx → HashRouter → App.jsx
+1. App si avvia → main.tsx → HashRouter → App.tsx
 2. Dashboard renderizzata (nessun dato esterno necessario)
 3. Utente naviga a /smartworking
-4. SmartWorkingApp.jsx:
+4. SmartWorkingApp.tsx:
    a. dayStates inizializzati come ['free','free','free','free','free']
    b. Utente clicca giorni → cycleState() aggiorna dayStates
    c. useMemo ricalcola permutazioni via generateAllPermutations()
    d. UI renderizza permutazioni
 5. Utente naviga a /smartworking/team
-6. TeamViewPage.jsx:
+6. TeamViewPage.tsx:
    a. getTeamView(weekStart) → fetchTeamPlans() → mock data da config
    b. computeOfficeOverlaps() calcola coincidenze
    c. UI renderizza tabella
 7. Utente naviga a /smartworking/saved
-8. SavedWeeksPage.jsx:
+8. SavedWeeksPage.tsx:
    a. loadAll() → localStorage
    b. UI renderizza lista template
 ```
@@ -441,7 +453,8 @@ Framework: **Tailwind CSS 4** con tema personalizzato (colori Apple-style). Clas
 |---|---|---|
 | Template salvati | `localStorage` | `sw-saved-weeks` |
 | Watch list | `localStorage` | `sw-watched-members` |
-| Stato auth | Memoria (variabile JS) | — |
+| Tema | `localStorage` | `eos-theme` |
+| Stato auth | Memoria (variabile) | — |
 | Stato cache watcher | Memoria (Map) | — |
 | Notifiche | Memoria (array) | — |
 | Token Entra ID | Memoria (MSAL.js) | — |
@@ -456,7 +469,7 @@ Framework: **Tailwind CSS 4** con tema personalizzato (colori Apple-style). Clas
 
 ### Framework
 - **Vitest** 4.x — compatibile con Vite, stesso ambiente
-- **nock** (previsto) per mock HTTP quando le integrazioni saranno attive
+- **TypeScript** — test in `.test.ts` con type safety
 
 ### Script
 ```bash
@@ -468,26 +481,26 @@ npm run test:watch  # Watch mode per sviluppo
 
 | File test | Test | Copre |
 |---|---|---|
-| `smartworking.test.js` | 51 | Mappe SW/Ufficio, `generateAllPermutations` (tutti i casi: 0-5 liberi, vincoli, target frazionari, unicità, invarianti) |
-| `savedWeeks.test.js` | 27 | `loadAll`, `save` (validazione, limiti, duplicati), `remove`, `rename`, `exportAll`, `importFromJSON` (merge, skip, errori), `count` |
-| `teamView.test.js` | 12 | `computeOfficeOverlaps` (null, no office, overlaps, vuoto), `computeFullOverlapMatrix`, `bcPlanToInternal` (conversione, default, null, fallback) |
-| `teamWatcher.test.js` | 22 | `hashWeek`, `diffWeeks`, `getCurrentWeekStart`, watch list CRUD, persistenza, notifiche |
+| `smartworking.test.ts` | 51 | Mappe SW/Ufficio, `generateAllPermutations` (tutti i casi: 0-5 liberi, vincoli, target frazionari, unicità, invarianti) |
+| `savedWeeks.test.ts` | 27 | `loadAll`, `save` (validazione, limiti, duplicati), `remove`, `rename`, `exportAll`, `importFromJSON` (merge, skip, errori), `count` |
+| `teamView.test.ts` | 12 | `computeOfficeOverlaps` (null, no office, overlaps, vuoto), `computeFullOverlapMatrix`, `bcPlanToInternal` (conversione, default, null, fallback) |
+| `teamWatcher.test.ts` | 22 | `hashWeek`, `diffWeeks`, `getCurrentWeekStart`, watch list CRUD, persistenza, notifiche |
 | **Totale** | **112** | |
 
 ### Pattern di test
 - **Funzioni pure**: testate direttamente con input/output
 - **localStorage**: mockato con oggetto in-memory, resettato a ogni `beforeEach`
-- **Moduli con dipendenze**: mockate con `vi.mock()` (es. `businessCentral.js` in `teamWatcher.test.js`)
+- **Moduli con dipendenze**: mockate con `vi.mock()` (es. `businessCentral.ts` in `teamWatcher.test.ts`)
 - **Test UI**: non ancora implementati (richiedono jsdom o testing-library)
 
 ---
 
 ## 7. Configurazione integrazioni
 
-Per attivare le integrazioni reali con Microsoft 365, modificare `src/modules/shared/config.js`:
+Per attivare le integrazioni reali con Microsoft 365, modificare `src/modules/shared/config.ts`:
 
 ### Step 1: Entra ID (Azure AD)
-```javascript
+```typescript
 entraId: {
   clientId: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',  // Da Azure Portal
   authority: 'https://login.microsoftonline.com/your-tenant-id',
@@ -497,7 +510,7 @@ entraId: {
 ```
 
 ### Step 2: Business Central
-```javascript
+```typescript
 businessCentral: {
   baseUrl: 'https://api.businesscentral.dynamics.com/v2.0/your-tenant/your-environment',
   companyId: 'YOUR_COMPANY_ID',
@@ -507,13 +520,13 @@ features: { bcIntegration: true }
 ```
 
 ### Step 3: Outlook
-```javascript
+```typescript
 features: { outlookIntegration: true }
 ```
 Nessuna configurazione aggiuntiva — usa stesso token Entra ID.
 
 ### Step 4: Teams
-```javascript
+```typescript
 teams: {
   webhookUrl: 'https://eosprod.webhook.office.com/webhookb2/...',
 }
@@ -521,7 +534,7 @@ features: { teamsNotifications: true }
 ```
 
 ### Step 5: Timesheet (quando sviluppato)
-```javascript
+```typescript
 features: { timesheet: true }
 ```
 
@@ -536,8 +549,8 @@ npm run build     # Vite build → dist/
 
 Output:
 - `dist/index.html` (0.5 KB)
-- `dist/assets/index-*.css` (26 KB)
-- `dist/assets/index-*.js` (252 KB)
+- `dist/assets/index-*.css` (33 KB)
+- `dist/assets/index-*.js` (244 KB)
 
 ### Deploy
 ```bash
@@ -561,30 +574,30 @@ Questo è necessario perché GitHub Pages non supporta SPA routing (qualsiasi pa
 ### Aggiungere un nuovo modulo
 
 1. Creare la cartella `src/modules/nuovo-modulo/`
-2. Creare il componente React (`.jsx`)
-3. Aggiungere la rotta in `App.jsx`:
-   ```jsx
+2. Creare il componente React (`.tsx`)
+3. Aggiungere la rotta in `App.tsx`:
+   ```tsx
    <Route path="/nuovo-modulo" element={<NuovoModulo />} />
    ```
-4. Aggiungere la card in `Dashboard.jsx`:
-   ```javascript
+4. Aggiungere la card in `Dashboard.tsx`:
+   ```typescript
    { title: 'Nuovo Modulo', icon: '🆕', path: '/nuovo-modulo', status: 'active', color: '#...' }
    ```
-5. (Opzionale) Aggiungere link nella navbar di `App.jsx`
-6. (Opzionale) Aggiungere feature flag in `config.js`
+5. (Opzionale) Aggiungere link nella navbar di `App.tsx`
+6. (Opzionale) Aggiungere feature flag in `config.ts`
 
 ### Aggiungere logica pura
 
-1. Creare `src/modules/nuovo-modulo/logica.js`
-2. Esportare funzioni pure
-3. Creare `logica.test.js` con Vitest
+1. Creare `src/modules/nuovo-modulo/logica.ts`
+2. Esportare funzioni pure con type annotations
+3. Creare `logica.test.ts` con Vitest
 4. Importare nel componente React
 
 ### Attivare un'integrazione reale
 
-1. Configurare i valori in `config.js` (client ID, tenant, URL)
+1. Configurare i valori in `config.ts` (client ID, tenant, URL)
 2. Impostare il feature flag a `true`
-3. Implementare la logica di produzione nel modulo stub (es. `businessCentral.js`)
+3. Implementare la logica di produzione nel modulo stub (es. `businessCentral.ts`)
 4. Aggiungere test con mock HTTP (nock)
 
 ### Aggiungere test UI
@@ -597,7 +610,7 @@ Configurare `vite.config.js`:
 ```javascript
 test: {
   environment: 'jsdom',
-  include: ['src/**/*.test.jsx', 'src/**/*.test.js'],
+  include: ['src/**/*.test.tsx', 'src/**/*.test.ts'],
 }
 ```
 
@@ -607,15 +620,15 @@ test: {
 
 | Metrica | Valore |
 |---|---|
-| **File sorgente** | 23 file (15 nuovi in v3) |
-| **Righe di codice** | ~3,500 (nuove in v3) |
-| **Test** | 112 (51 esistenti + 61 nuovi) |
+| **Linguaggio** | TypeScript (`.ts` / `.tsx`) |
+| **File sorgente** | 23 file |
+| **Test** | 112 (4 file di test) |
 | **Moduli puri** | 4 (smartworking, savedWeeks, teamView, teamWatcher) |
-| **Componenti React** | 8 (App, Dashboard, SmartWorkingApp, TeamViewPage, SavedWeeksPage, NotificationBell, TimesheetApp) |
+| **Componenti React** | 8 (App, Dashboard, SmartWorkingApp, TeamViewPage, SavedWeeksPage, NotificationBell, TimesheetApp, ThemeProvider) |
 | **Stub integrazioni** | 4 (msAuth, businessCentral, outlookCalendar, teamsNotify) |
-| **Dimensione build** | CSS 26 KB + JS 252 KB (gzip: 6 KB + 80 KB) |
-| **Dipendenze npm** | react, react-dom, react-router-dom, tailwindcss, vite, vitest, gh-pages |
+| **Dimensione build** | CSS 33 KB + JS 244 KB (gzip: 7 KB + 77 KB) |
+| **Dipendenze npm** | react, react-dom, react-router-dom, typescript, tailwindcss, vite, vitest, gh-pages |
 
 ---
 
-*Documento generato da IgelDev — 19 giugno 2026*
+*Documento generato da IgelDev — 20 giugno 2026*

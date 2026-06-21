@@ -7,7 +7,7 @@ import {
   exportAll,
   importFromJSON,
   count,
-} from './savedWeeks.js'
+} from './savedWeeks.ts'
 
 // Mock localStorage
 const localStorageMock = (() => {

@@ -12,19 +12,16 @@ export default function TimesheetApp() {
     <div className="placeholder-page">
       <div className="placeholder-card">
         <span className="placeholder-icon">⏱️</span>
-        <h2 className="placeholder-title">Timesheet</h2>
+        <h1 className="placeholder-title">Timesheet</h1>
         <p className="placeholder-desc">
-          Questo modulo permetterà di registrare le ore lavorate
-          direttamente su Business Central di EOS Prod.
+          Registrazione ore lavorate direttamente su Business Central di EOS Prod.
         </p>
         <div className="placeholder-features">
-          <span>📝 Registrazione ore giornaliere</span>
-          <span>📊 Riepilogo settimanale/mensile</span>
-          <span>📤 Export Excel</span>
-          <span>🔄 Sincronizzazione con BC</span>
+          <span>📋 Inserimento ore</span>
+          <span>📊 Riepilogo settimanale</span>
+          <span>🔄 Sync con BC</span>
         </div>
-        <p className="placeholder-note">Disponibile prossimamente</p>
-        <Link to="/" className="placeholder-back">
+        <Link to="/" className="sw-nav-link">
           ← Torna alla Dashboard
         </Link>
       </div>

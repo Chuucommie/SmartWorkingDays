@@ -8,17 +8,26 @@
 // In sviluppo, usa mock data da config.
 // ──────────────────────────────────────────────
 
-import { fetchTeamPlans } from '../shared/businessCentral.js'
-import { getCurrentEmployeeId, getCurrentUserProfile } from '../shared/msAuth.js'
+import { fetchTeamPlans } from '../shared/businessCentral.ts'
+import { getCurrentEmployeeId, getCurrentUserProfile } from '../shared/msAuth.ts'
+import type { TeamPlan, WeekPlan, EmployeeData } from '../shared/config.ts'
+
+/** Risultato della vista team */
+export interface TeamViewResult {
+  myPlan: TeamPlan | null
+  colleagues: TeamPlan[]
+  department: string
+  location: string
+}
+
+/** Mappa giorno → nomi colleghi in ufficio */
+export type OfficeOverlaps = Record<number, string[]>
 
 /**
  * Recupera e filtra le pianificazioni del team per la settimana.
  * Filtra per stesso dipartimento e stessa sede dell'utente corrente.
- *
- * @param {string} weekStart - Data inizio settimana ISO (YYYY-MM-DD)
- * @returns {Promise<{ myPlan: object|null, colleagues: object[], department: string, location: string }>}
  */
-export async function getTeamView(weekStart) {
+export async function getTeamView(weekStart: string): Promise<TeamViewResult> {
   const myProfile = getCurrentUserProfile()
   if (!myProfile) {
     throw new Error('Utente non autenticato — impossibile determinare dipartimento e sede')
@@ -52,14 +61,12 @@ export async function getTeamView(weekStart) {
 /**
  * Calcola per ogni giorno della settimana quali colleghi
  * sono in ufficio insieme all'utente.
- *
- * @param {object|null} myPlan - Piano dell'utente { week: string[5] }
- * @param {object[]} colleagues - Piani dei colleghi [{ employeeName, week }]
- * @returns {object} Mappa dayIndex (0-4) → array di nomi colleghi
- *   Es. { 1: ['Mario Rossi'], 2: ['Mario Rossi', 'Anna Bianchi'] }
  */
-export function computeOfficeOverlaps(myPlan, colleagues) {
-  const overlaps = {}
+export function computeOfficeOverlaps(
+  myPlan: TeamPlan | null,
+  colleagues: TeamPlan[]
+): OfficeOverlaps {
+  const overlaps: OfficeOverlaps = {}
 
   if (!myPlan || !myPlan.week) return overlaps
 
@@ -82,13 +89,12 @@ export function computeOfficeOverlaps(myPlan, colleagues) {
 /**
  * Versione estesa: calcola TUTTE le coincidenze tra TUTTI i membri del team.
  * Restituisce una matrice giorni × colleghi per heatmap.
- *
- * @param {object|null} myPlan
- * @param {object[]} colleagues
- * @returns {boolean[][]} Matrice 5×N: matrix[day][colleagueIndex] = true se coincidono
  */
-export function computeFullOverlapMatrix(myPlan, colleagues) {
-  const matrix = []
+export function computeFullOverlapMatrix(
+  myPlan: TeamPlan | null,
+  colleagues: TeamPlan[]
+): boolean[][] {
+  const matrix: boolean[][] = []
   for (let day = 0; day < 5; day++) {
     matrix[day] = colleagues.map(c =>
       !!(myPlan && myPlan.week && myPlan.week[day] === 'office' &&
@@ -98,18 +104,31 @@ export function computeFullOverlapMatrix(myPlan, colleagues) {
   return matrix
 }
 
+/** Formato raw di una pianificazione da Business Central */
+export interface BcPlanRaw {
+  employeeId?: string
+  employeeNo?: string
+  employeeName?: string
+  employee?: { firstName?: string; lastName?: string }
+  department?: string
+  locationCode?: string
+  monday?: string
+  tuesday?: string
+  wednesday?: string
+  thursday?: string
+  friday?: string
+  swDaysRequested?: number
+}
+
 /**
  * Converte una pianificazione BC nel formato interno dell'app.
  * Funzione pura, testabile.
- *
- * @param {object|null} bcPlan - Pianificazione da BC (con enum day type)
- * @returns {object|null} Pianificazione in formato interno
  */
-export function bcPlanToInternal(bcPlan) {
+export function bcPlanToInternal(bcPlan: BcPlanRaw | null): TeamPlan | null {
   if (!bcPlan) return null
 
   // Mappa enum BC → stati interni
-  const dayTypeMap = {
+  const dayTypeMap: Record<string, DayState> = {
     'Free': 'free',
     'SmartWorking': 'sw',
     'Office': 'office',
@@ -117,17 +136,17 @@ export function bcPlanToInternal(bcPlan) {
   }
 
   return {
-    employeeId: bcPlan.employeeId || bcPlan.employeeNo,
+    employeeId: bcPlan.employeeId || bcPlan.employeeNo || '',
     employeeName: bcPlan.employeeName || `${bcPlan.employee?.firstName || ''} ${bcPlan.employee?.lastName || ''}`.trim(),
     department: bcPlan.department || bcPlan.employee?.department || '',
     locationCode: bcPlan.locationCode || bcPlan.employee?.locationCode || '',
     week: [
-      dayTypeMap[bcPlan.monday] || 'free',
-      dayTypeMap[bcPlan.tuesday] || 'free',
-      dayTypeMap[bcPlan.wednesday] || 'free',
-      dayTypeMap[bcPlan.thursday] || 'free',
-      dayTypeMap[bcPlan.friday] || 'free',
-    ],
+      dayTypeMap[bcPlan.monday || ''] || 'free',
+      dayTypeMap[bcPlan.tuesday || ''] || 'free',
+      dayTypeMap[bcPlan.wednesday || ''] || 'free',
+      dayTypeMap[bcPlan.thursday || ''] || 'free',
+      dayTypeMap[bcPlan.friday || ''] || 'free',
+    ] as WeekPlan,
     swDaysRequested: bcPlan.swDaysRequested || 0,
   }
 }

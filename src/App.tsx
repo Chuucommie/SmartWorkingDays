@@ -2,13 +2,13 @@
 // EOS Timesheet — Layout principale (React Router v6)
 // ──────────────────────────────────────────────
 import { Routes, Route, NavLink } from 'react-router-dom'
-import { isFeatureEnabled } from './modules/shared/config.js'
-import { useTheme } from './modules/shared/ThemeProvider.jsx'
-import Dashboard from './Dashboard.jsx'
-import SmartWorkingApp from './modules/smartworking/SmartWorkingApp.jsx'
-import TeamViewPage from './modules/smartworking/TeamViewPage.jsx'
-import SavedWeeksPage from './modules/smartworking/SavedWeeksPage.jsx'
-import TimesheetApp from './modules/timesheet/TimesheetApp.jsx'
+import { isFeatureEnabled } from './modules/shared/config.ts'
+import { useTheme } from './modules/shared/ThemeProvider.tsx'
+import Dashboard from './Dashboard.tsx'
+import SmartWorkingApp from './modules/smartworking/SmartWorkingApp.tsx'
+import TeamViewPage from './modules/smartworking/TeamViewPage.tsx'
+import SavedWeeksPage from './modules/smartworking/SavedWeeksPage.tsx'
+import TimesheetApp from './modules/timesheet/TimesheetApp.tsx'
 
 /**
  * Layout globale con navbar, tema toggle e routing.

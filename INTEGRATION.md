@@ -553,7 +553,7 @@ src/
 ### 5.3 Configurazione
 
 ```javascript
-// config.js (nuovo file, modificabile senza rebuild)
+// config.ts (nuovo file, modificabile senza rebuild)
 export const APP_CONFIG = {
   // Regola smart working (modificabile per azienda)
   swRatio: 0.6,                        // 60%
@@ -604,7 +604,7 @@ export const APP_CONFIG = {
 - [ ] App Registration su Azure (Entra ID) con scope BC + Graph
 - [ ] Modulo `src/msAuth.js` con MSAL.js (PKCE flow, token in memoria)
 - [ ] Bottone "Login Microsoft" nella UI
-- [ ] File `config.js` con toggle fonti/destinazioni
+- [ ] File `config.ts` con toggle fonti/destinazioni
 - [ ] Test auth flow
 
 ### Fase 2 — Import dati (2-3 settimane)

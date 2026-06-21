@@ -1,15 +1,21 @@
 // ──────────────────────────────────────────────
 // EOS Timesheet — Theme Provider (Dark/Light)
 // ──────────────────────────────────────────────
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 
-const ThemeContext = createContext(null)
+type Theme = 'dark' | 'light'
+
+interface ThemeContextValue {
+  theme: Theme
+  toggleTheme: () => void
+}
+
+const ThemeContext = createContext<ThemeContextValue | null>(null)
 
 /**
  * Rileva la preferenza di tema del dispositivo.
- * @returns {'dark' | 'light'}
  */
-function getSystemTheme() {
+function getSystemTheme(): Theme {
   if (typeof window === 'undefined') return 'light'
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
@@ -19,8 +25,8 @@ function getSystemTheme() {
  * All'avvio usa la preferenza del dispositivo.
  * L'utente può toggleare manualmente.
  */
-export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(() => {
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  const [theme, setTheme] = useState<Theme>(() => {
     // Legge tema salvato o usa preferenza sistema
     const saved = localStorage.getItem('eos-theme')
     if (saved === 'dark' || saved === 'light') return saved
@@ -36,7 +42,7 @@ export function ThemeProvider({ children }) {
   // Ascolta cambiamenti preferenza sistema (solo se l'utente non ha scelto manualmente)
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
-    const handler = (e) => {
+    const handler = (e: MediaQueryListEvent) => {
       const saved = localStorage.getItem('eos-theme')
       if (!saved || saved === 'dark' || saved === 'light') {
         // Se l'utente ha già scelto manualmente, non cambiare
@@ -61,9 +67,8 @@ export function ThemeProvider({ children }) {
 
 /**
  * Hook per accedere al tema corrente e al toggle.
- * @returns {{ theme: 'dark'|'light', toggleTheme: () => void }}
  */
-export function useTheme() {
+export function useTheme(): ThemeContextValue {
   const ctx = useContext(ThemeContext)
   if (!ctx) throw new Error('useTheme deve essere usato dentro ThemeProvider')
   return ctx

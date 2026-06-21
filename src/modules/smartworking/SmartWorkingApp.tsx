@@ -1,32 +1,44 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { SW_DAYS_MAP, OFFICE_DAYS_MAP, generateAllPermutations } from './smartworking.js'
+import { SW_DAYS_MAP, OFFICE_DAYS_MAP, generateAllPermutations } from './smartworking.ts'
+import type { Permutation } from './smartworking.ts'
+import type { DayState, WeekPlan } from '../shared/config.ts'
 
-const DAY_LABELS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven']
-const DAY_LABELS_FULL = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì']
+const DAY_LABELS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven'] as const
+const DAY_LABELS_FULL = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì'] as const
 
 // Stati possibili per ogni giorno
-const STATES = {
+interface StateConfig {
+  label: string
+  icon: string
+  cls: string
+  dot: string
+}
+
+const STATES: Record<DayState, StateConfig> = {
   free:      { label: 'Libero',   icon: '◌', cls: 'state-free',   dot: '' },
   sw:        { label: 'SW Fisso', icon: '🏠', cls: 'state-sw',     dot: 'sw' },
   office:    { label: 'Ufficio',  icon: '🏢', cls: 'state-office', dot: 'office' },
   absent:    { label: 'Assenza',  icon: '✕', cls: 'state-absent', dot: 'absent' },
 }
-const STATE_ORDER = ['free', 'sw', 'office', 'absent']
+const STATE_ORDER: DayState[] = ['free', 'sw', 'office', 'absent']
 
-// Genera TUTTE le 2^k combinazioni per i giorni liberi.
-// Restituisce OGNI permutazione con flag `valid` (true se rispetta la regola 60%).
-function SmartWorkingApp() {
+/**
+ * Pagina principale Smart Working.
+ * Genera TUTTE le 2^k combinazioni per i giorni liberi.
+ * Restituisce OGNI permutazione con flag `valid` (true se rispetta la regola 60%).
+ */
+export default function SmartWorkingApp() {
   // Stato: array di 5 elementi con 'free' | 'sw' | 'office' | 'absent'
-  const [dayStates, setDayStates] = useState(['free', 'free', 'free', 'free', 'free'])
-  const [selectedPerm, setSelectedPerm] = useState(null) // indice permutazione selezionata
+  const [dayStates, setDayStates] = useState<WeekPlan>(['free', 'free', 'free', 'free', 'free'])
+  const [selectedPerm, setSelectedPerm] = useState<number | null>(null)
   const [animating, setAnimating] = useState(false)
-  const [showAll, setShowAll] = useState(false) // toggle per mostrare anche le non valide
+  const [showAll, setShowAll] = useState(false)
 
   // Cicla stato al click
-  const cycleState = (index) => {
+  const cycleState = (index: number) => {
     setDayStates(prev => {
-      const next = [...prev]
+      const next = [...prev] as WeekPlan
       const currentIdx = STATE_ORDER.indexOf(next[index])
       next[index] = STATE_ORDER[(currentIdx + 1) % STATE_ORDER.length]
       return next
@@ -40,7 +52,7 @@ function SmartWorkingApp() {
   const officeTarget = OFFICE_DAYS_MAP[workedCount] ?? 0
 
   // Genera permutazioni
-  const permutations = useMemo(
+  const permutations: Permutation[] = useMemo(
     () => generateAllPermutations(dayStates, swTarget, officeTarget),
     [dayStates, swTarget, officeTarget]
   )
@@ -211,7 +223,7 @@ function SmartWorkingApp() {
               </div>
 
               <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
-                {(showAll ? permutations : permutations.filter(p => p.valid)).map((perm, pIdx) => {
+                {(showAll ? permutations : permutations.filter(p => p.valid)).map((perm) => {
                   // Trova l'indice originale nella lista completa per mantenere la numerazione
                   const origIdx = permutations.indexOf(perm)
                   return (
@@ -297,5 +309,3 @@ function SmartWorkingApp() {
     </div>
   )
 }
-
-export default SmartWorkingApp

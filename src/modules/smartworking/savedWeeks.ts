@@ -8,22 +8,47 @@
 // essere sincronizzati anche lato server.
 // ──────────────────────────────────────────────
 
-import { APP_CONFIG } from '../shared/config.js'
+import { APP_CONFIG } from '../shared/config.ts'
+import type { WeekPlan } from '../shared/config.ts'
+
+/** Template settimanale salvato */
+export interface SavedTemplate {
+  id: string
+  name: string
+  days: WeekPlan
+  swDaysRequested: number
+  createdAt: string
+  updatedAt: string
+}
+
+/** Risultato di un'operazione CRUD */
+export interface OpResult<T = void> {
+  success: boolean
+  error?: string
+  template?: T
+}
+
+/** Risultato import */
+export interface ImportResult {
+  success: boolean
+  added: number
+  total: number
+  error?: string
+}
 
 const STORAGE_KEY = 'sw-saved-weeks'
 const MAX_TEMPLATES = APP_CONFIG.limits.maxSavedWeeks
 
 /**
  * Carica tutti i template salvati.
- * @returns {object[]} Array di template, vuoto se nessuno o dati corrotti
  */
-export function loadAll() {
+export function loadAll(): SavedTemplate[] {
   const raw = localStorage.getItem(STORAGE_KEY)
   if (!raw) return []
 
   try {
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed : []
+    const parsed: unknown = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed as SavedTemplate[] : []
   } catch {
     // Dati corrotti → reset silenzioso per non bloccare l'utente
     localStorage.removeItem(STORAGE_KEY)
@@ -33,12 +58,8 @@ export function loadAll() {
 
 /**
  * Salva un nuovo template.
- * @param {string} name - Nome descrittivo (max 50 caratteri)
- * @param {string[]} days - Array di 5 stati: 'free'|'sw'|'office'|'absent'
- * @param {number} swDaysRequested - Giorni SW desiderati dall'utente
- * @returns {{ success: boolean, error?: string, template?: object }}
  */
-export function save(name, days, swDaysRequested) {
+export function save(name: string, days: WeekPlan, swDaysRequested: number): OpResult<SavedTemplate> {
   // Validazione input
   if (!name || name.trim().length === 0) {
     return { success: false, error: 'Il nome è obbligatorio' }
@@ -66,7 +87,7 @@ export function save(name, days, swDaysRequested) {
     return { success: false, error: 'Esiste già un template con questo nome' }
   }
 
-  const template = {
+  const template: SavedTemplate = {
     id: crypto.randomUUID(),
     name: trimmedName,
     days,
@@ -82,10 +103,8 @@ export function save(name, days, swDaysRequested) {
 
 /**
  * Elimina un template per ID.
- * @param {string} id
- * @returns {{ success: boolean, error?: string }}
  */
-export function remove(id) {
+export function remove(id: string): OpResult {
   const all = loadAll()
   const filtered = all.filter(t => t.id !== id)
   if (filtered.length === all.length) {
@@ -97,11 +116,8 @@ export function remove(id) {
 
 /**
  * Rinomina un template.
- * @param {string} id
- * @param {string} newName
- * @returns {{ success: boolean, error?: string, template?: object }}
  */
-export function rename(id, newName) {
+export function rename(id: string, newName: string): OpResult<SavedTemplate> {
   if (!newName || newName.trim().length === 0) {
     return { success: false, error: 'Il nome è obbligatorio' }
   }
@@ -129,20 +145,17 @@ export function rename(id, newName) {
 
 /**
  * Esporta tutti i template come stringa JSON (per backup).
- * @returns {string} JSON formattato
  */
-export function exportAll() {
+export function exportAll(): string {
   return JSON.stringify(loadAll(), null, 2)
 }
 
 /**
  * Importa template da una stringa JSON.
  * Fa merge con i template esistenti, saltando duplicati per nome.
- * @param {string} jsonString
- * @returns {{ success: boolean, added: number, total: number, error?: string }}
  */
-export function importFromJSON(jsonString) {
-  let incoming
+export function importFromJSON(jsonString: string): ImportResult {
+  let incoming: unknown
   try {
     incoming = JSON.parse(jsonString)
   } catch {
@@ -164,7 +177,7 @@ export function importFromJSON(jsonString) {
     all.push({
       id: t.id || crypto.randomUUID(),
       name: t.name,
-      days: t.days,
+      days: t.days as WeekPlan,
       swDaysRequested: t.swDaysRequested || 0,
       createdAt: t.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -178,14 +191,13 @@ export function importFromJSON(jsonString) {
 
 /**
  * Restituisce il numero di template salvati.
- * @returns {number}
  */
-export function count() {
+export function count(): number {
   return loadAll().length
 }
 
 // ── Helper interno ──
 
-function persist(templates) {
+function persist(templates: SavedTemplate[]): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(templates))
 }

@@ -9,8 +9,10 @@
 
 // ── Tipi condivisi ──
 
-/** Stato di un singolo giorno della settimana */
-export type DayState = 'free' | 'sw' | 'office' | 'absent'
+/** Stato di un singolo giorno della settimana.
+ *  'half' è usato solo nei risultati delle permutazioni (mezza giornata),
+ *  non è selezionabile direttamente dall'utente. */
+export type DayState = 'free' | 'sw' | 'office' | 'absent' | 'half'
 
 /** Pianificazione settimanale: 5 giorni (Lun-Ven) */
 export type WeekPlan = [DayState, DayState, DayState, DayState, DayState]

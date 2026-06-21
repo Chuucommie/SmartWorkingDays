@@ -20,7 +20,9 @@ const STATES: Record<DayState, StateConfig> = {
   sw:        { label: 'SW Fisso', icon: '🏠', cls: 'state-sw',     dot: 'sw' },
   office:    { label: 'Ufficio',  icon: '🏢', cls: 'state-office', dot: 'office' },
   absent:    { label: 'Assenza',  icon: '✕', cls: 'state-absent', dot: 'absent' },
+  half:      { label: 'Misto',    icon: '◐', cls: 'state-half',   dot: 'half' },
 }
+// L'utente può selezionare solo free/sw/office/absent. 'half' appare solo nei risultati.
 const STATE_ORDER: DayState[] = ['free', 'sw', 'office', 'absent']
 
 /**

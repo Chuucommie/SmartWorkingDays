@@ -1091,6 +1091,22 @@ body {
   color: var(--text-secondary);
   border: 1px solid var(--border-gray);
 }
+.mini-pill.half {
+  background: linear-gradient(90deg, rgba(52, 199, 89, 0.18) 50%, rgba(0, 122, 255, 0.15) 50%);
+  color: var(--text-primary);
+  border: 1px solid rgba(52, 199, 89, 0.25);
+  border-right-color: rgba(0, 122, 255, 0.25);
+  position: relative;
+}
+.mini-pill.half::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 2px;
+  bottom: 2px;
+  width: 1px;
+  background: rgba(0,0,0,0.12);
+}
 
 /* ── Legend pills ── */
 .legend-pill {

@@ -1,8 +1,13 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { SW_DAYS_MAP, OFFICE_DAYS_MAP, generateAllPermutations } from './smartworking.ts'
+import { generateAllPermutations } from './smartworking.ts'
 import type { Permutation } from './smartworking.ts'
 import type { DayState, WeekPlan } from '../shared/config.ts'
+import { MOCK_USER_ID, DEFAULT_SW_RULE, USER_RULES } from '../shared/config.ts'
+import type { SwRule } from '../shared/config.ts'
+import { computeTarget, describeSwRule } from '../shared/userProfile.ts'
+import { getCurrentMsId, getCurrentUserProfile } from '../shared/msAuth.ts'
+import UserBadge from './UserBadge.tsx'
 
 const DAY_LABELS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven'] as const
 const DAY_LABELS_FULL = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì'] as const
@@ -26,9 +31,19 @@ const STATES: Record<DayState, StateConfig> = {
 const STATE_ORDER: DayState[] = ['free', 'sw', 'office', 'absent']
 
 /**
+ * Restituisce l'emoji e classe per l'indicatore di aderenza.
+ */
+function getAdherenceBadge(adherence: number): { emoji: string; cls: string; label: string } {
+  if (adherence >= 0.99) return { emoji: '🟢', cls: 'adherence-green', label: 'Ottimale' }
+  if (adherence >= 0.75) return { emoji: '🟡', cls: 'adherence-yellow', label: 'Buono' }
+  if (adherence >= 0.4)  return { emoji: '🟠', cls: 'adherence-orange', label: 'Parziale' }
+  return { emoji: '🔴', cls: 'adherence-red', label: 'Minimo' }
+}
+
+/**
  * Pagina principale Smart Working.
- * Genera TUTTE le 2^k combinazioni per i giorni liberi.
- * Restituisce OGNI permutazione con flag `valid` (true se rispetta la regola 60%).
+ * Genera TUTTE le 3^k combinazioni per i giorni liberi.
+ * Validazione flessibile: SW <= target (massimo, non obbligo).
  */
 export default function SmartWorkingApp() {
   // Stato: array di 5 elementi con 'free' | 'sw' | 'office' | 'absent'
@@ -36,6 +51,12 @@ export default function SmartWorkingApp() {
   const [selectedPerm, setSelectedPerm] = useState<number | null>(null)
   const [animating, setAnimating] = useState(false)
   const [showAll, setShowAll] = useState(false)
+
+  // ── Regola SW dinamica ──
+  const msId = getCurrentMsId() ?? MOCK_USER_ID
+  const swRule: SwRule = USER_RULES[msId] ?? DEFAULT_SW_RULE
+  const userProfile = getCurrentUserProfile()
+  const displayName = userProfile?.employeeName ?? 'Utente'
 
   // Cicla stato al click
   const cycleState = (index: number) => {
@@ -50,13 +71,12 @@ export default function SmartWorkingApp() {
 
   // Calcoli derivati
   const workedCount = dayStates.filter(s => s !== 'absent').length
-  const swTarget = SW_DAYS_MAP[workedCount] ?? 0
-  const officeTarget = OFFICE_DAYS_MAP[workedCount] ?? 0
+  const { targetSW, targetOffice } = computeTarget(swRule, workedCount)
 
   // Genera permutazioni
   const permutations: Permutation[] = useMemo(
-    () => generateAllPermutations(dayStates, swTarget, officeTarget),
-    [dayStates, swTarget, officeTarget]
+    () => generateAllPermutations(dayStates, swRule),
+    [dayStates, swRule]
   )
 
   const validCount = permutations.filter(p => p.valid).length
@@ -66,12 +86,17 @@ export default function SmartWorkingApp() {
     setAnimating(true)
     const t = setTimeout(() => setAnimating(false), 400)
     return () => clearTimeout(t)
-  }, [swTarget])
+  }, [targetSW])
 
-  const theoretical = (workedCount * 0.6).toFixed(1)
+  // Descrizione regola
+  const ruleDesc = describeSwRule(swRule)
+  const theoretical = swRule.type === 'percentage'
+    ? ((swRule.value / 100) * workedCount).toFixed(1)
+    : `${Math.min(swRule.value, workedCount)}`
 
-  // Descrizione arrotondamento
+  // Descrizione arrotondamento (solo per percentage)
   const roundNote = (() => {
+    if (swRule.type !== 'percentage') return null
     if (workedCount === 4) return '↑ 2.4 → 2.5'
     if (workedCount === 3) return '↑ 1.8 → 2.0'
     if (workedCount === 2) return '↓ 1.2 → 1.0'
@@ -109,6 +134,11 @@ export default function SmartWorkingApp() {
           <p className="text-[14px] text-[#8E8E93] font-normal">
             Configura i vincoli e scegli la tua settimana
           </p>
+
+          {/* User Badge */}
+          <div className="mt-3">
+            <UserBadge displayName={displayName} swRule={swRule} />
+          </div>
         </div>
 
         {/* Main Card */}
@@ -169,10 +199,16 @@ export default function SmartWorkingApp() {
               <span className="text-[14px] font-medium text-[#1C1C1E]">{workedCount}/5</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-[14px] text-[#8E8E93]">Percentuale SW (60%)</span>
-              <span className="text-[14px] font-medium text-[#1C1C1E]">{theoretical} giorni</span>
+              <span className="text-[14px] text-[#8E8E93]">Regola SW</span>
+              <span className="text-[14px] font-medium text-[#1C1C1E]">{ruleDesc}</span>
             </div>
-            {roundNote !== '—' && (
+            {swRule.type === 'percentage' && (
+              <div className="flex justify-between items-center">
+                <span className="text-[14px] text-[#8E8E93]">Percentuale ({swRule.value}%)</span>
+                <span className="text-[14px] font-medium text-[#1C1C1E]">{theoretical} giorni</span>
+              </div>
+            )}
+            {roundNote && roundNote !== '—' && (
               <div className="flex justify-between items-center">
                 <span className="text-[14px] text-[#8E8E93]">Arrotondamento</span>
                 <span className="text-[13px] text-[#34C759] font-medium">{roundNote}</span>
@@ -186,15 +222,17 @@ export default function SmartWorkingApp() {
               <div>
                 <p className="text-[11px] font-medium text-white/60 uppercase tracking-[0.5px]">Smart Working</p>
                 <p className={`text-[36px] font-bold text-white leading-none tracking-[-0.5px] ${animating ? 'animate-count' : ''}`}>
-                  {swTarget.toFixed(1)}
+                  {targetSW.toFixed(1)}
                 </p>
+                <p className="text-[10px] text-white/40 mt-1">massimo</p>
               </div>
               <div className="w-px bg-white/20" />
               <div>
                 <p className="text-[11px] font-medium text-white/60 uppercase tracking-[0.5px]">Ufficio</p>
                 <p className={`text-[36px] font-bold text-white leading-none tracking-[-0.5px] ${animating ? 'animate-count' : ''}`}>
-                  {officeTarget.toFixed(1)}
+                  {targetOffice.toFixed(1)}
                 </p>
+                <p className="text-[10px] text-white/40 mt-1">minimo</p>
               </div>
             </div>
           </div>
@@ -226,8 +264,9 @@ export default function SmartWorkingApp() {
 
               <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
                 {(showAll ? permutations : permutations.filter(p => p.valid)).map((perm) => {
-                  // Trova l'indice originale nella lista completa per mantenere la numerazione
                   const origIdx = permutations.indexOf(perm)
+                  const adh = getAdherenceBadge(perm.adherence)
+                  const pct = Math.round(perm.adherence * 100)
                   return (
                   <button
                     key={origIdx}
@@ -239,7 +278,9 @@ export default function SmartWorkingApp() {
                       ${!perm.valid ? 'opacity-40 cursor-not-allowed' : ''}
                       ${origIdx === selectedPerm ? 'selected' : ''}
                     `}
-                    title={perm.valid ? 'Valida — clicca per selezionare' : 'Non valida: non rispetta la regola del 60%'}
+                    title={perm.valid
+                      ? `Aderenza ${pct}% — clicca per selezionare`
+                      : 'Non valida: supera il target SW'}
                   >
                     <span className="text-[11px] text-[#8E8E93] font-medium w-5 text-left">
                       {origIdx + 1}
@@ -256,6 +297,10 @@ export default function SmartWorkingApp() {
                       <span className="text-[#8E8E93]">·</span>
                       <span className={perm.valid ? 'text-[#0056B3] font-medium' : 'text-[#8E8E93]'}>🏢{perm.totalOffice}</span>
                     </div>
+                    {/* Indicatore aderenza colorato */}
+                    <span className={`adherence-badge ${adh.cls}`} title={`${adh.label}: ${pct}%`}>
+                      {adh.emoji} {pct}%
+                    </span>
                     {perm.valid ? (
                       origIdx === selectedPerm ? (
                         <span className="text-[#34C759] text-sm">✓</span>
@@ -275,9 +320,9 @@ export default function SmartWorkingApp() {
           {permutations.length === 0 && workedCount > 0 && (
             <div className="text-center py-4">
               <p className="text-[13px] text-[#8E8E93]">
-                {dayStates.filter(s => s === 'sw').length > Math.ceil(swTarget)
+                {dayStates.filter(s => s === 'sw').length > targetSW
                   ? '⚠️ Troppi giorni fissati in Smart Working'
-                  : dayStates.filter(s => s === 'office').length > Math.ceil(officeTarget)
+                  : dayStates.filter(s => s === 'office').length > targetOffice
                   ? '⚠️ Troppi giorni fissati in Ufficio'
                   : 'Nessuna combinazione possibile'}
               </p>
@@ -286,7 +331,7 @@ export default function SmartWorkingApp() {
 
           {/* Info note */}
           <p className="text-center text-[11px] text-[#8E8E93] mt-4 leading-relaxed">
-            Basato sull'accordo aziendale del 60% delle ore lavorate
+            Regola: {ruleDesc} · Puoi fare meno SW del target
           </p>
         </div>
 

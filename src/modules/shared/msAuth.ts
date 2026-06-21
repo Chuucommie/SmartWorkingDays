@@ -9,7 +9,7 @@
 // Per ora fornisce un mock che simula un utente autenticato.
 // ──────────────────────────────────────────────
 
-import { APP_CONFIG, getMockEmployeeData } from './config.ts'
+import { APP_CONFIG, getMockEmployeeData, MOCK_USER_ID } from './config.ts'
 import type { EmployeeData } from './config.ts'
 
 /** Stato corrente dell'autenticazione */
@@ -138,4 +138,17 @@ function notifyListeners(): void {
   for (const listener of authListeners) {
     try { listener(state) } catch (e) { console.error('[msAuth] Listener error:', e) }
   }
+}
+
+/**
+ * Restituisce il Microsoft user ID (oid) dell'utente corrente.
+ * In mock mode restituisce MOCK_USER_ID.
+ * In produzione: dal token ID.
+ */
+export function getCurrentMsId(): string | null {
+  if (APP_CONFIG.entraId.clientId === 'YOUR_CLIENT_ID_HERE') {
+    return MOCK_USER_ID
+  }
+  // TODO: estrarre oid dal token ID
+  return authState.account?.username ?? null
 }

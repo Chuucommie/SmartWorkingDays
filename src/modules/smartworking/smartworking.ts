@@ -1,12 +1,15 @@
 // ──────────────────────────────────────────────
 // SmartWorkingDays — Logica pura (testabile)
 // ──────────────────────────────────────────────
+//
+// Genera permutazioni base-3 con half-day.
+// Validazione flessibile: totalSW <= targetSW (massimo, non obbligo).
+// Risultati ordinati per SW decrescente (ottimali in cima).
+// ──────────────────────────────────────────────
 
 import type { DayState, WeekPlan } from '../shared/config.ts'
-
-/** Mappatura giorni SW spettanti in base ai giorni effettivamente lavorati */
-export const SW_DAYS_MAP: Record<number, number> = { 5: 3.0, 4: 2.5, 3: 2.0, 2: 1.0, 1: 0.0, 0: 0.0 }
-export const OFFICE_DAYS_MAP: Record<number, number> = { 5: 2.0, 4: 1.5, 3: 1.0, 2: 1.0, 1: 1.0, 0: 0.0 }
+import type { SwRule } from '../shared/userProfile.ts'
+import { computeTarget } from '../shared/userProfile.ts'
 
 /** Una permutazione generata */
 export interface Permutation {
@@ -14,6 +17,8 @@ export interface Permutation {
   totalSW: number
   totalOffice: number
   valid: boolean
+  /** Aderenza al target SW: 0-1 (1 = target pieno, 0 = tutto ufficio) */
+  adherence: number
 }
 
 const EPSILON = 0.001
@@ -21,16 +26,24 @@ const EPSILON = 0.001
 /**
  * Genera TUTTE le 3^k combinazioni per i giorni liberi.
  * Ogni giorno libero può diventare: sw, office, o half (mezza giornata).
- * Il giorno half contribuisce 0.5 a SW e 0.5 a Ufficio,
- * permettendo di raggiungere esattamente target frazionari (es. 2.5 SW, 1.5 Ufficio).
  *
- * 'half' appare SOLO nei risultati delle permutazioni — non è selezionabile dall'utente.
+ * Validazione flessibile: totalSW <= targetSW.
+ * L'utente può fare MENO SW del target (anche 0 = tutti in ufficio).
+ * Superare il target NON è valido.
+ *
+ * 'half' appare SOLO nei risultati — non è selezionabile dall'utente.
+ *
+ * @param dayStates - Stato corrente dei 5 giorni (free/sw/office/absent)
+ * @param rule - Regola SW dell'utente (percentage o fixed)
+ * @returns Permutazioni ordinate per SW decrescente
  */
 export function generateAllPermutations(
   dayStates: WeekPlan,
-  swTarget: number,
-  officeTarget: number
+  rule: SwRule
 ): Permutation[] {
+  const workedCount = dayStates.filter(s => s !== 'absent').length
+  const { targetSW, targetOffice } = computeTarget(rule, workedCount)
+
   const freeIndices: number[] = []
   let fixedSW = 0
   let fixedOffice = 0
@@ -47,8 +60,9 @@ export function generateAllPermutations(
   if (k === 0) {
     const totalSW = fixedSW
     const totalOffice = fixedOffice
-    const valid = Math.abs(totalSW - swTarget) < EPSILON && Math.abs(totalOffice - officeTarget) < EPSILON
-    return [{ week: [...dayStates] as WeekPlan, totalSW, totalOffice, valid }]
+    const valid = totalSW <= targetSW + EPSILON
+    const adherence = targetSW > 0 ? Math.min(totalSW / targetSW, 1) : 1
+    return [{ week: [...dayStates] as WeekPlan, totalSW, totalOffice, valid, adherence }]
   }
 
   // 3^k combinazioni: ogni giorno libero → sw, office, o half
@@ -76,10 +90,16 @@ export function generateAllPermutations(
     const totalSW = fixedSW + assignedSW
     const totalOffice = fixedOffice + assignedOffice
 
-    const valid = Math.abs(totalSW - swTarget) < EPSILON && Math.abs(totalOffice - officeTarget) < EPSILON
+    // Validazione flessibile: SW <= target (massimo, non obbligo)
+    const valid = totalSW <= targetSW + EPSILON
+    // Aderenza: quanto del target SW è stato raggiunto (0-1)
+    const adherence = targetSW > 0 ? Math.min(totalSW / targetSW, 1) : 1
 
-    all.push({ week, totalSW, totalOffice, valid })
+    all.push({ week, totalSW, totalOffice, valid, adherence })
   }
+
+  // Ordina per SW decrescente (ottimali in cima)
+  all.sort((a, b) => b.totalSW - a.totalSW)
 
   return all
 }

@@ -537,6 +537,69 @@ body {
   background: var(--sw-nav-link-hover-bg);
 }
 
+/* ── User Badge ── */
+.user-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  background: var(--bg-badge-blue);
+  border: 1px solid var(--border-blue);
+  font-size: 12px;
+}
+
+.user-badge-name {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.user-badge-rule {
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+}
+
+.user-badge-rule.percentage {
+  background: var(--bg-badge-green);
+  color: var(--text-green);
+}
+
+.user-badge-rule.fixed {
+  background: var(--bg-badge-blue);
+  color: var(--text-blue);
+}
+
+/* ── Adherence badge ── */
+.adherence-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+
+.adherence-badge.adherence-green {
+  background: rgba(52, 199, 89, 0.12);
+  color: var(--text-green);
+}
+
+.adherence-badge.adherence-yellow {
+  background: rgba(255, 149, 0, 0.12);
+  color: var(--accent-orange);
+}
+
+.adherence-badge.adherence-orange {
+  background: rgba(255, 149, 0, 0.18);
+  color: #CC7A00;
+}
+
+.adherence-badge.adherence-red {
+  background: rgba(255, 59, 48, 0.1);
+  color: var(--text-red);
+}
+
 /* ── Team View ── */
 .team-view-page {
   max-width: 640px;

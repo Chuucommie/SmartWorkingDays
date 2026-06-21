@@ -14,6 +14,30 @@
  *  non è selezionabile direttamente dall'utente. */
 export type DayState = 'free' | 'sw' | 'office' | 'absent' | 'half'
 
+// ── Regole Smart Working per utente ──
+// In produzione il lookup sarà fatto in Business Central.
+// Per ora usiamo una mappa statica con mock user.
+
+import type { SwRule } from './userProfile.ts'
+export type { SwRule } from './userProfile.ts'
+
+/** Mappa statica utenti → regole SW */
+export const USER_RULES: Record<string, SwRule> = {
+  // Mock user — Ricardo (default 60%)
+  'mock-oid-ricardo': { type: 'percentage', value: 60 },
+
+  // Esempi di altri utenti con regole diverse
+  'mock-oid-collega1': { type: 'fixed', value: 2 },
+  'mock-oid-collega2': { type: 'percentage', value: 40 },
+  'mock-oid-collega3': { type: 'fixed', value: 3 },
+}
+
+/** Regola di default per utenti non trovati nella mappa */
+export const DEFAULT_SW_RULE: SwRule = { type: 'percentage', value: 60 }
+
+/** Microsoft user ID dell'utente mock (usato finché non c'è MSAL reale) */
+export const MOCK_USER_ID = 'mock-oid-ricardo'
+
 /** Pianificazione settimanale: 5 giorni (Lun-Ven) */
 export type WeekPlan = [DayState, DayState, DayState, DayState, DayState]
 
@@ -40,11 +64,6 @@ export interface TeamPlan {
 export interface AppConfig {
   appName: string
   appVersion: string
-  smartWorking: {
-    ratio: number
-    daysMap: Record<number, number>
-    officeDaysMap: Record<number, number>
-  }
   entraId: {
     clientId: string
     authority: string
@@ -82,30 +101,6 @@ export const APP_CONFIG: AppConfig = {
   // ── Identità app ──
   appName: 'EOS Timesheet',
   appVersion: '3.0.0',
-
-  // ── Regola Smart Working ──
-  // Modificabile per adattarsi a policy aziendali diverse dal 60%
-  smartWorking: {
-    ratio: 0.6, // 60% dei giorni lavorati
-    daysMap: {
-      // giorniLavorati → giorniSW
-      5: 3.0,
-      4: 2.5,
-      3: 2.0,
-      2: 1.0,
-      1: 0.0,
-      0: 0.0,
-    },
-    officeDaysMap: {
-      // giorniLavorati → giorniUfficio
-      5: 2.0,
-      4: 1.5,
-      3: 1.0,
-      2: 1.0,
-      1: 1.0,
-      0: 0.0,
-    },
-  },
 
   // ── Microsoft Entra ID (Azure AD) ──
   // Sostituire con i valori della propria App Registration

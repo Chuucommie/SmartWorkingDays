@@ -203,7 +203,7 @@ describe('validateTimesheet', () => {
     const ts = createEmptyTimesheet('', '')
     const result = validateTimesheet(ts)
     expect(result.valid).toBe(false)
-    expect(result.errors.some(e => e.includes('Resource'))).toBe(true)
+    expect(result.errors.some(e => e.includes('risorsa'))).toBe(true)
   })
 
   it('detects zero quantity', () => {
@@ -213,7 +213,7 @@ describe('validateTimesheet', () => {
     ]
     const result = validateTimesheet(ts)
     expect(result.valid).toBe(false)
-    expect(result.errors.some(e => e.includes('Quantity'))).toBe(true)
+    expect(result.errors.some(e => e.includes('Quantità'))).toBe(true)
   })
 
   it('detects missing description', () => {
@@ -223,7 +223,7 @@ describe('validateTimesheet', () => {
     ]
     const result = validateTimesheet(ts)
     expect(result.valid).toBe(false)
-    expect(result.errors.some(e => e.includes('Description'))).toBe(true)
+    expect(result.errors.some(e => e.includes('Descrizione'))).toBe(true)
   })
 
   it('warns on high daily hours', () => {

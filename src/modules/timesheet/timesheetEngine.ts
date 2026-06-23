@@ -1,6 +1,9 @@
 // ──────────────────────────────────────────────
 // EOS Timesheet — Logica pura (testabile)
 // ──────────────────────────────────────────────
+// Basato sul modulo Timesheet di Business Central.
+// Campi BC esatti, nessun costo, righe per giorno.
+// ──────────────────────────────────────────────
 
 import type {
   Timesheet,
@@ -9,162 +12,170 @@ import type {
   TimesheetStatus,
   TimesheetStats,
   TimesheetFilter,
+  DaySummary,
   ValidationResult,
 } from './timesheetTypes.ts'
 
+// ── Nomi giorni ──
+
+export const DAY_NAMES = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì'] as const
+export const DAY_NAMES_SHORT = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven'] as const
+
 // ── Helpers ──
 
-/** Genera un ID univoco */
 export function generateId(): string {
   return crypto.randomUUID()
 }
 
-/** Formatta una data ISO in formato leggibile (it-IT) */
 export function formatDate(iso: string): string {
   const d = new Date(iso)
   return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-/** Formatta un numero come valuta */
-export function formatCurrency(value: number): string {
-  return `€ ${value.toFixed(2)}`
+export function formatDateShort(iso: string): string {
+  const d = new Date(iso)
+  return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'numeric' })
 }
 
-/** Restituisce il numero della settimana ISO da una data */
+/**
+ * ISO 8601 week number (lunedì = primo giorno della settimana).
+ * La settimana 1 è quella che contiene il primo giovedì dell'anno.
+ */
 export function getWeekNumber(dateStr: string): number {
   const d = new Date(dateStr)
-  const start = new Date(d.getFullYear(), 0, 1)
-  const days = Math.floor((d.getTime() - start.getTime()) / 86400000)
-  return Math.ceil((days + start.getDay() + 1) / 7)
+  const dayNum = d.getUTCDay() || 7 // domenica = 7
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum) // sposta al giovedì
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
+  const weekNo = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)
+  return weekNo
 }
 
-/** Restituisce le date di inizio e fine settimana */
+/**
+ * Restituisce le date di inizio e fine settimana ISO (lunedì-domenica).
+ */
 export function getWeekRange(weekNo: number, year: number = new Date().getFullYear()): { start: string; end: string } {
-  const jan1 = new Date(year, 0, 1)
-  const daysOffset = (weekNo - 1) * 7 - jan1.getDay() + 1
-  const start = new Date(year, 0, 1 + daysOffset)
-  const end = new Date(start)
-  end.setDate(end.getDate() + 6)
-  return {
-    start: start.toISOString().split('T')[0],
-    end: end.toISOString().split('T')[0],
-  }
+  // Trova il 4 gennaio (sempre nella settimana 1)
+  const jan4 = new Date(Date.UTC(year, 0, 4))
+  const jan4Day = jan4.getUTCDay() || 7
+  // Lunedì della settimana 1
+  const week1Monday = new Date(jan4)
+  week1Monday.setUTCDate(jan4.getUTCDate() - (jan4Day - 1))
+  // Lunedì della settimana target
+  const monday = new Date(week1Monday)
+  monday.setUTCDate(week1Monday.getUTCDate() + (weekNo - 1) * 7)
+  const sunday = new Date(monday)
+  sunday.setUTCDate(monday.getUTCDate() + 6)
+
+  const fmt = (d: Date) => d.toISOString().split('T')[0]
+  return { start: fmt(monday), end: fmt(sunday) }
+}
+
+/**
+ * Restituisce le 5 date (Lun-Ven) per una settimana.
+ */
+export function getWeekDates(weekNo: number, year?: number): string[] {
+  const { start } = getWeekRange(weekNo, year)
+  const monday = new Date(start)
+  return Array.from({ length: 5 }, (_, i) => {
+    const d = new Date(monday)
+    d.setUTCDate(monday.getUTCDate() + i)
+    return d.toISOString().split('T')[0]
+  })
 }
 
 // ── Validazione ──
 
-/**
- * Valida un timesheet completo.
- */
 export function validateTimesheet(timesheet: Timesheet): ValidationResult {
   const errors: string[] = []
   const warnings: string[] = []
 
-  // Header
   if (!timesheet.header.resourceNo) errors.push('Resource No. obbligatorio')
   if (!timesheet.header.resourceName) errors.push('Resource Name obbligatorio')
   if (!timesheet.header.startingDate) errors.push('Data inizio obbligatoria')
   if (!timesheet.header.endingDate) errors.push('Data fine obbligatoria')
 
-  // Date
   if (timesheet.header.startingDate && timesheet.header.endingDate) {
     if (new Date(timesheet.header.startingDate) > new Date(timesheet.header.endingDate)) {
       errors.push('Data inizio successiva alla data fine')
     }
   }
 
-  // Lines
   if (timesheet.lines.length === 0) {
     warnings.push('Nessuna riga inserita')
   }
 
   for (const line of timesheet.lines) {
-    if (line.quantity <= 0) errors.push(`Riga ${line.lineNo}: quantità deve essere > 0`)
+    if (line.quantity <= 0) errors.push(`Riga ${line.lineNo}: Quantity deve essere > 0`)
     if (line.quantity > 24) warnings.push(`Riga ${line.lineNo}: ${line.quantity}h in un giorno — verificare`)
-    if (!line.description) errors.push(`Riga ${line.lineNo}: descrizione obbligatoria`)
-    if (line.unitCost < 0) errors.push(`Riga ${line.lineNo}: costo unitario negativo`)
+    if (!line.description) errors.push(`Riga ${line.lineNo}: Description obbligatoria`)
   }
 
   // Totale ore giornaliero
-  const byDay: Record<string, number> = {}
+  const byDay: Record<number, number> = {}
   for (const line of timesheet.lines) {
-    if (line.date) {
-      byDay[line.date] = (byDay[line.date] || 0) + line.quantity
-    }
+    byDay[line.dayIndex] = (byDay[line.dayIndex] || 0) + line.quantity
   }
-  for (const [date, hours] of Object.entries(byDay)) {
-    if (hours > 24) errors.push(`${date}: ${hours}h totali — supera le 24h`)
+  for (const [dayIdx, hours] of Object.entries(byDay)) {
+    if (hours > 24) errors.push(`${DAY_NAMES[Number(dayIdx)]}: ${hours}h totali — supera le 24h`)
   }
 
-  return {
-    valid: errors.length === 0,
-    errors,
-    warnings,
+  return { valid: errors.length === 0, errors, warnings }
+}
+
+// ── Raggruppamento per giorno ──
+
+/**
+ * Raggruppa le righe per giorno (dayIndex 0-4).
+ */
+export function groupByDay(lines: TimesheetLine[], weekNo: number, year?: number): DaySummary[] {
+  const dates = getWeekDates(weekNo, year)
+  const groups: Record<number, TimesheetLine[]> = {}
+  for (let i = 0; i < 5; i++) groups[i] = []
+
+  for (const line of lines) {
+    if (groups[line.dayIndex]) {
+      groups[line.dayIndex].push(line)
+    }
   }
+
+  return DAY_NAMES.map((name, i) => ({
+    dayIndex: i,
+    dayName: name,
+    date: dates[i],
+    lines: groups[i],
+    totalHours: groups[i].reduce((sum, l) => sum + l.quantity, 0),
+  }))
 }
 
 // ── Calcoli ──
 
-/**
- * Calcola le statistiche di un timesheet.
- */
 export function computeStats(timesheet: Timesheet): TimesheetStats {
   let totalHours = 0
-  let totalCost = 0
-  let billableHours = 0
-  let nonBillableHours = 0
-  const byWorkType: Record<string, { hours: number; cost: number }> = {}
-  const byJob: Record<string, { hours: number; cost: number }> = {}
-  const byDay: Record<string, number> = {}
+  const byDay: Record<number, number> = {}
+  const byWorkType: Record<string, number> = {}
+  const byJob: Record<string, number> = {}
 
   for (const line of timesheet.lines) {
     totalHours += line.quantity
-    totalCost += line.totalCost
+    byDay[line.dayIndex] = (byDay[line.dayIndex] || 0) + line.quantity
 
-    if (line.chargeable) billableHours += line.quantity
-    else nonBillableHours += line.quantity
-
-    // Per work type
     const wt = line.workType || 'Standard'
-    if (!byWorkType[wt]) byWorkType[wt] = { hours: 0, cost: 0 }
-    byWorkType[wt].hours += line.quantity
-    byWorkType[wt].cost += line.totalCost
+    byWorkType[wt] = (byWorkType[wt] || 0) + line.quantity
 
-    // Per job
     if (line.jobNo) {
-      if (!byJob[line.jobNo]) byJob[line.jobNo] = { hours: 0, cost: 0 }
-      byJob[line.jobNo].hours += line.quantity
-      byJob[line.jobNo].cost += line.totalCost
-    }
-
-    // Per giorno
-    if (line.date) {
-      byDay[line.date] = (byDay[line.date] || 0) + line.quantity
+      byJob[line.jobNo] = (byJob[line.jobNo] || 0) + line.quantity
     }
   }
 
-  return { totalHours, totalCost, billableHours, nonBillableHours, byWorkType, byJob, byDay }
+  return { totalHours, byDay, byWorkType, byJob }
 }
 
-/**
- * Calcola il totale delle ore di un timesheet.
- */
 export function computeTotalHours(lines: TimesheetLine[]): number {
   return lines.reduce((sum, l) => sum + l.quantity, 0)
 }
 
-/**
- * Calcola il costo totale.
- */
-export function computeTotalCost(lines: TimesheetLine[]): number {
-  return lines.reduce((sum, l) => sum + l.totalCost, 0)
-}
-
 // ── Filtri ──
 
-/**
- * Filtra una lista di timesheet.
- */
 export function filterTimesheets(timesheets: Timesheet[], filter: TimesheetFilter): Timesheet[] {
   return timesheets.filter(ts => {
     if (filter.status && ts.header.status !== filter.status) return false
@@ -178,9 +189,6 @@ export function filterTimesheets(timesheets: Timesheet[], filter: TimesheetFilte
 
 // ── Factory ──
 
-/**
- * Crea un nuovo timesheet vuoto.
- */
 export function createEmptyTimesheet(resourceNo: string, resourceName: string): Timesheet {
   const now = new Date()
   const weekNo = getWeekNumber(now.toISOString())
@@ -189,10 +197,7 @@ export function createEmptyTimesheet(resourceNo: string, resourceName: string): 
   const no = `TS${String(weekNo).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`
 
   const header: TimesheetHeader = {
-    id,
-    no,
-    resourceNo,
-    resourceName,
+    id, no, resourceNo, resourceName,
     status: 'Open',
     startingDate: start,
     endingDate: end,
@@ -205,10 +210,7 @@ export function createEmptyTimesheet(resourceNo: string, resourceName: string): 
   return { header, lines: [] }
 }
 
-/**
- * Aggiunge una riga vuota al timesheet.
- */
-export function addEmptyLine(timesheet: Timesheet): Timesheet {
+export function addEmptyLine(timesheet: Timesheet, dayIndex: number): Timesheet {
   const lineNo = timesheet.lines.length + 1
   const newLine: TimesheetLine = {
     id: generateId(),
@@ -219,33 +221,18 @@ export function addEmptyLine(timesheet: Timesheet): Timesheet {
     description: '',
     quantity: 0,
     unitOfMeasure: 'Hours',
-    unitCost: 0,
-    totalCost: 0,
+    jobNo: timesheet.header.jobNo,
     chargeable: true,
+    dayIndex,
   }
-  return {
-    ...timesheet,
-    lines: [...timesheet.lines, newLine],
-  }
+  return { ...timesheet, lines: [...timesheet.lines, newLine] }
 }
 
-/**
- * Aggiorna una riga esistente.
- */
 export function updateLine(timesheet: Timesheet, lineId: string, updates: Partial<TimesheetLine>): Timesheet {
-  const lines = timesheet.lines.map(l => {
-    if (l.id !== lineId) return l
-    const updated = { ...l, ...updates }
-    // Ricalcola totalCost
-    updated.totalCost = updated.quantity * updated.unitCost
-    return updated
-  })
+  const lines = timesheet.lines.map(l => l.id !== lineId ? l : { ...l, ...updates })
   return { ...timesheet, lines }
 }
 
-/**
- * Rimuove una riga.
- */
 export function removeLine(timesheet: Timesheet, lineId: string): Timesheet {
   const lines = timesheet.lines
     .filter(l => l.id !== lineId)
@@ -253,9 +240,6 @@ export function removeLine(timesheet: Timesheet, lineId: string): Timesheet {
   return { ...timesheet, lines }
 }
 
-/**
- * Cambia lo stato di un timesheet.
- */
 export function changeStatus(timesheet: Timesheet, newStatus: TimesheetStatus): Timesheet {
   return {
     ...timesheet,
@@ -265,107 +249,41 @@ export function changeStatus(timesheet: Timesheet, newStatus: TimesheetStatus): 
 
 // ── Mock data ──
 
-/**
- * Genera dati mock per sviluppo/testing.
- */
 export function getMockTimesheets(): Timesheet[] {
   const now = new Date()
-  const weekNo = getWeekNumber(now.toISOString())
-  const { start, end } = getWeekRange(weekNo)
+  const currentWeek = getWeekNumber(now.toISOString())
+  const prevWeek = currentWeek - 1
 
-  const days = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì']
-  const dates = (() => {
-    const s = new Date(start)
-    return Array.from({ length: 5 }, (_, i) => {
-      const d = new Date(s)
-      d.setDate(d.getDate() + i)
-      return d.toISOString().split('T')[0]
-    })
-  })()
+  const makeLines = (tsId: string, weekNo: number, jobNo: string, desc: string): TimesheetLine[] => {
+    const dates = getWeekDates(weekNo)
+    return [
+      { id: generateId(), timesheetId: tsId, lineNo: 1, type: 'Resource', no: 'EMP001', description: `${desc} — analisi requisiti`, quantity: 8, unitOfMeasure: 'Hours', jobNo, workType: 'Billable', chargeable: true, locationCode: 'MILANO', dayIndex: 0 },
+      { id: generateId(), timesheetId: tsId, lineNo: 2, type: 'Resource', no: 'EMP001', description: `${desc} — sviluppo`, quantity: 8, unitOfMeasure: 'Hours', jobNo, workType: 'Billable', chargeable: true, locationCode: 'MILANO', dayIndex: 1 },
+      { id: generateId(), timesheetId: tsId, lineNo: 3, type: 'Resource', no: 'EMP001', description: `${desc} — sviluppo`, quantity: 4, unitOfMeasure: 'Hours', jobNo, workType: 'Billable', chargeable: true, locationCode: 'MILANO', dayIndex: 2 },
+      { id: generateId(), timesheetId: tsId, lineNo: 4, type: 'Resource', no: 'EMP001', description: `${desc} — documentazione`, quantity: 6, unitOfMeasure: 'Hours', jobNo, workType: 'Non-Billable', chargeable: false, locationCode: 'MILANO', dayIndex: 2 },
+      { id: generateId(), timesheetId: tsId, lineNo: 5, type: 'Resource', no: 'EMP001', description: `${desc} — test`, quantity: 8, unitOfMeasure: 'Hours', jobNo, workType: 'Billable', chargeable: true, locationCode: 'MILANO', dayIndex: 3 },
+      { id: generateId(), timesheetId: tsId, lineNo: 6, type: 'Resource', no: 'EMP001', description: `${desc} — review & deploy`, quantity: 6, unitOfMeasure: 'Hours', jobNo, workType: 'Billable', chargeable: true, locationCode: 'MILANO', dayIndex: 4 },
+    ]
+  }
 
   const ts1: Timesheet = {
     header: {
-      id: 'ts-001',
-      no: 'TS2401',
-      resourceNo: 'EMP001',
-      resourceName: 'Ricardo Quintero',
-      status: 'Approved',
-      startingDate: start,
-      endingDate: end,
-      weekNo,
-      periodType: 'Week',
-      jobNo: 'JOB-2024-001',
-      description: 'Sviluppo modulo Timesheet',
-      createdAt: now.toISOString(),
-      updatedAt: now.toISOString(),
+      id: 'ts-001', no: `TS${String(prevWeek).padStart(2, '0')}01`, resourceNo: 'EMP001', resourceName: 'Ricardo Quintero',
+      status: 'Approved', startingDate: getWeekDates(prevWeek)[0], endingDate: getWeekDates(prevWeek)[4],
+      weekNo: prevWeek, periodType: 'Week', jobNo: 'JOB-2024-001', description: 'Sviluppo modulo Timesheet',
+      createdAt: now.toISOString(), updatedAt: now.toISOString(),
     },
-    lines: days.map((day, i) => ({
-      id: `line-${i + 1}`,
-      timesheetId: 'ts-001',
-      lineNo: i + 1,
-      type: 'Resource' as const,
-      no: 'EMP001',
-      description: `${day} — Sviluppo frontend React`,
-      quantity: i === 2 ? 4 : 8,
-      unitOfMeasure: 'Hours' as const,
-      unitCost: 45,
-      totalCost: (i === 2 ? 4 : 8) * 45,
-      jobNo: 'JOB-2024-001',
-      workType: 'Billable',
-      chargeable: true,
-      locationCode: 'MILANO',
-      date: dates[i],
-    })),
+    lines: makeLines('ts-001', prevWeek, 'JOB-2024-001', 'Timesheet'),
   }
 
   const ts2: Timesheet = {
     header: {
-      id: 'ts-002',
-      no: 'TS2402',
-      resourceNo: 'EMP001',
-      resourceName: 'Ricardo Quintero',
-      status: 'Open',
-      startingDate: start,
-      endingDate: end,
-      weekNo: weekNo + 1,
-      periodType: 'Week',
-      description: 'Documentazione e test',
-      createdAt: now.toISOString(),
-      updatedAt: now.toISOString(),
+      id: 'ts-002', no: `TS${String(currentWeek).padStart(2, '0')}01`, resourceNo: 'EMP001', resourceName: 'Ricardo Quintero',
+      status: 'Open', startingDate: getWeekDates(currentWeek)[0], endingDate: getWeekDates(currentWeek)[4],
+      weekNo: currentWeek, periodType: 'Week', description: 'Documentazione e test',
+      createdAt: now.toISOString(), updatedAt: now.toISOString(),
     },
-    lines: [
-      {
-        id: 'line-2-1',
-        timesheetId: 'ts-002',
-        lineNo: 1,
-        type: 'Resource',
-        no: 'EMP001',
-        description: 'Documentazione tecnica',
-        quantity: 6,
-        unitOfMeasure: 'Hours',
-        unitCost: 45,
-        totalCost: 270,
-        workType: 'Non-Billable',
-        chargeable: false,
-        date: dates[0],
-      },
-      {
-        id: 'line-2-2',
-        timesheetId: 'ts-002',
-        lineNo: 2,
-        type: 'Resource',
-        no: 'EMP001',
-        description: 'Test unitari',
-        quantity: 8,
-        unitOfMeasure: 'Hours',
-        unitCost: 45,
-        totalCost: 360,
-        workType: 'Billable',
-        chargeable: true,
-        jobNo: 'JOB-2024-002',
-        date: dates[1],
-      },
-    ],
+    lines: makeLines('ts-002', currentWeek, 'JOB-2024-002', 'Documentazione'),
   }
 
   return [ts1, ts2]

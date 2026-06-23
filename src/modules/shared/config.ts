@@ -145,7 +145,7 @@ export const APP_CONFIG: AppConfig = {
     teamView: true,           // Vista team + coincidenze
     teamNotifications: true,  // Notifiche cambi stato (polling)
     savedWeeks: true,         // Template settimanali salvati
-    timesheet: false,         // Modulo timesheet (in sviluppo)
+    timesheet: true,          // Modulo timesheet
     outlookIntegration: false, // Import/export calendario Outlook
     teamsNotifications: false, // Notifiche canale Teams
     bcIntegration: false,     // Salvataggio pianificazioni su BC

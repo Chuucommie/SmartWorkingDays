@@ -1315,4 +1315,30 @@ body {
   .team-table th, .team-table td { padding: 8px 10px; }
   .notification-dropdown { width: 280px; right: -40px; }
 }
+
+/* ── Timesheet ── */
+.timesheet-status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.timesheet-bar {
+  height: 8px;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.timesheet-stat-card {
+  text-align: center;
+  padding: 16px 12px;
+  border-radius: 16px;
+  transition: transform 0.2s ease;
+}
+
+.timesheet-stat-card:hover {
+  transform: translateY(-2px);
+}
  

@@ -12,7 +12,7 @@ import type { Permutation } from './smartworking.ts'
 import type { DayState, WeekPlan } from '../shared/config.ts'
 import { computeTarget, describeSwRule } from '../shared/userProfile.ts'
 import type { SwRule } from '../shared/userProfile.ts'
-import { getCurrentUserProfile } from '../shared/msAuth.ts'
+import { loadSession } from '../shared/tursoAuth.ts'
 import { save } from './savedWeeks.ts'
 import { savePlanning } from '../shared/planBackend.ts'
 import { getCurrentWeekStart } from './teamWatcher.ts'
@@ -73,10 +73,10 @@ export default function SmartWorkingApp() {
   const [publishing, setPublishing] = useState(false)
   const [publishMsg, setPublishMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
-  const userProfile = getCurrentUserProfile()
-  const displayName = userProfile?.employeeName ?? 'Utente'
-  const resourceNo = userProfile?.employeeId || 'EMP001'
-  const sedeCode = userProfile?.locationCode || 'BOLOGNA'
+  const session = loadSession()
+  const displayName = session?.name ?? 'Utente'
+  const resourceNo = session?.userId || 'EMP001'
+  const sedeCode = session?.locationCode || 'MILANO'
 
   const cycleState = (index: number) => {
     setDayStates(prev => {

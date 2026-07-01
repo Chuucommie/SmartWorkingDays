@@ -7,14 +7,12 @@
 //   - githubBackend = true  → usa githubPlans.ts (JSON nel repo)
 //   - bcIntegration = true  → usa businessCentral.ts (BC OData)
 //   - nessuno                → localStorage (dati locali, senza server)
-//
-// I consumer (teamView, teamWatcher) importano da QUI,
-// non direttamente da businessCentral, githubPlans o tursoPlans.
 // ──────────────────────────────────────────────
 
 import { APP_CONFIG } from './config.ts'
 import type { TeamPlan, WeekPlan } from './config.ts'
 import { getGitHubToken, getTursoUrl, getTursoToken } from './settings.ts'
+import { loadSession } from './tursoAuth.ts'
 
 import * as BcBackend from './businessCentral.ts'
 import type { SaveResult } from './businessCentral.ts'
@@ -29,10 +27,10 @@ export async function initPlanBackend(): Promise<void> {
   // Turso (priorità massima)
   if (APP_CONFIG.features.tursoBackend && !_tursoInitialized) {
     const { initTursoBackend, ensureSchema } = await import('./tursoPlans.ts')
+    const session = loadSession()
     const url = getTursoUrl() || APP_CONFIG.turso.url
-    const token = getTursoToken() || APP_CONFIG.turso.token
+    const token = session?.token || getTursoToken() || APP_CONFIG.turso.token
     initTursoBackend({ url, token })
-    await ensureSchema()
     _tursoInitialized = true
     console.info('[planBackend] Turso backend inizializzato')
     return
@@ -59,14 +57,8 @@ export async function initPlanBackend(): Promise<void> {
 const LOCAL_STORAGE_KEY = 'eos-team-plans'
 
 interface StoredPlan {
-  employeeId: string
-  employeeName: string
-  department: string
-  locationCode: string
-  weekStart: string
-  week: WeekPlan
-  swDaysRequested: number
-  updatedAt: string
+  employeeId: string; employeeName: string; department: string; locationCode: string
+  weekStart: string; week: WeekPlan; swDaysRequested: number; updatedAt: string
 }
 
 function loadLocalPlans(): StoredPlan[] {
@@ -87,35 +79,23 @@ function saveLocalPlans(plans: StoredPlan[]): void {
 // ── API pubbliche ──
 
 export async function fetchTeamPlans(weekStart: string): Promise<TeamPlan[]> {
-  // Turso
   if (APP_CONFIG.features.tursoBackend) {
     const { fetchTeamPlans: tursoFetch } = await import('./tursoPlans.ts')
     return tursoFetch(weekStart)
   }
-
-  // GitHub
   if (APP_CONFIG.features.githubBackend) {
     const { fetchTeamPlans: ghFetch } = await import('./githubPlans.ts')
     return ghFetch(weekStart)
   }
-
-  // BC
   if (APP_CONFIG.features.bcIntegration) {
     return BcBackend.fetchTeamPlans(weekStart)
   }
-
-  // localStorage
   const plans = loadLocalPlans()
-  return plans
-    .filter(p => p.weekStart === weekStart)
-    .map(p => ({
-      employeeId: p.employeeId,
-      employeeName: p.employeeName,
-      department: p.department,
-      locationCode: p.locationCode,
-      week: p.week,
-      swDaysRequested: p.swDaysRequested,
-    }))
+  return plans.filter(p => p.weekStart === weekStart).map(p => ({
+    employeeId: p.employeeId, employeeName: p.employeeName,
+    department: p.department, locationCode: p.locationCode,
+    week: p.week, swDaysRequested: p.swDaysRequested,
+  }))
 }
 
 export async function fetchEmployeePlan(employeeId: string, weekStart: string): Promise<TeamPlan | null> {
@@ -123,75 +103,50 @@ export async function fetchEmployeePlan(employeeId: string, weekStart: string): 
     const { fetchEmployeePlan: tursoFetch } = await import('./tursoPlans.ts')
     return tursoFetch(employeeId, weekStart)
   }
-
   if (APP_CONFIG.features.githubBackend) {
     const { fetchEmployeePlan: ghFetch } = await import('./githubPlans.ts')
     return ghFetch(employeeId, weekStart)
   }
-
   if (APP_CONFIG.features.bcIntegration) {
     return BcBackend.fetchEmployeePlan(employeeId, weekStart)
   }
-
   const allPlans = await fetchTeamPlans(weekStart)
   return allPlans.find(p => p.employeeId === employeeId) || null
 }
 
 export async function savePlanning(planning: {
-  employeeId: string
-  employeeName: string
-  department: string
-  locationCode: string
-  weekStart: string
-  week: WeekPlan
-  swDaysRequested: number
+  employeeId: string; employeeName: string; department: string; locationCode: string
+  weekStart: string; week: WeekPlan; swDaysRequested: number
 }): Promise<SaveResult> {
   if (APP_CONFIG.features.tursoBackend) {
     const { savePlanning: tursoSave } = await import('./tursoPlans.ts')
     return tursoSave(planning)
   }
-
   if (APP_CONFIG.features.githubBackend) {
     const { savePlanning: ghSave } = await import('./githubPlans.ts')
     return ghSave(planning)
   }
-
   if (APP_CONFIG.features.bcIntegration) {
     return BcBackend.savePlanning(planning)
   }
-
-  // localStorage
   try {
     const plans = loadLocalPlans()
     const now = new Date().toISOString()
-
     const existingIdx = plans.findIndex(
       p => p.employeeId === planning.employeeId && p.weekStart === planning.weekStart
     )
-
     const stored: StoredPlan = {
-      employeeId: planning.employeeId,
-      employeeName: planning.employeeName,
-      department: planning.department,
-      locationCode: planning.locationCode,
-      weekStart: planning.weekStart,
-      week: planning.week,
-      swDaysRequested: planning.swDaysRequested,
-      updatedAt: now,
+      employeeId: planning.employeeId, employeeName: planning.employeeName,
+      department: planning.department, locationCode: planning.locationCode,
+      weekStart: planning.weekStart, week: planning.week,
+      swDaysRequested: planning.swDaysRequested, updatedAt: now,
     }
-
-    if (existingIdx >= 0) {
-      plans[existingIdx] = stored
-    } else {
-      plans.push(stored)
-    }
-
+    if (existingIdx >= 0) plans[existingIdx] = stored
+    else plans.push(stored)
     saveLocalPlans(plans)
-    console.info('[planBackend] Piano salvato in localStorage:', stored.employeeName, stored.weekStart)
-    return { success: true, entryId: `${planning.employeeId}-${planning.weekStart}` }
+    return { success: true, entryId: planning.employeeId + '-' + planning.weekStart }
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Errore sconosciuto'
-    console.error('[planBackend] savePlanning fallito:', msg)
     return { success: false, error: msg }
   }
 }

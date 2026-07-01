@@ -89,8 +89,7 @@ export function saveSettings(settings: UserSettings): void {
  */
 export function isConfigured(): boolean {
   const s = loadSettings()
-  const hasBackend = s.tursoUrl.length > 0 || s.githubToken.length > 0
-  return hasBackend && s.displayName.length > 0 && s.location.length > 0
+  return s.displayName.length > 0 && s.location.length > 0
 }
 
 /**

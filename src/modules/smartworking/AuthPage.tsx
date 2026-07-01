@@ -14,14 +14,13 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
   const [name, setName] = useState('')
   const [department, setDepartment] = useState('IT')
   const [location, setLocation] = useState('')
-  const [dbToken, setDbToken] = useState(APP_CONFIG.turso.token || '')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   const ensureAuth = () => {
-    const token = dbToken || APP_CONFIG.turso.token
+    const token = APP_CONFIG.turso.token
     if (!token) {
-      setError('Inserisci il token del database Turso')
+      setError('Token database non configurato')
       return null
     }
     initTursoAuth({ url: APP_CONFIG.turso.url, token: token })
@@ -109,23 +108,6 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
             >
               ✨ Registrati
             </button>
-          </div>
-
-          {/* Database token field */}
-          <div className="auth-field">
-            <label htmlFor="dbToken">🗄️ Token Database Turso</label>
-            <input
-              id="dbToken"
-              type="password"
-              value={dbToken}
-              onChange={e => setDbToken(e.target.value)}
-              placeholder="eyJhbG... (dal dashboard Turso)"
-              className="auth-input"
-              autoComplete="off"
-            />
-            <span className="auth-hint">
-              Trovi il token nel dashboard del database su turso.tech
-            </span>
           </div>
 
           <div className="auth-field">

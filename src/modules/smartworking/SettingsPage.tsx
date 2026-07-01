@@ -17,7 +17,6 @@ import { LOCATIONS } from './teamView.ts'
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<UserSettings>(loadSettings)
-  const [showToken, setShowToken] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [importMsg, setImportMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -34,10 +33,6 @@ export default function SettingsPage() {
     }
     if (!settings.location) {
       setError('Seleziona la tua sede')
-      return
-    }
-    if (!settings.githubToken.trim()) {
-      setError('Inserisci il token GitHub')
       return
     }
 
@@ -161,93 +156,6 @@ export default function SettingsPage() {
             </span>
           </div>
 
-          {/* Turso (SQLite) */}
-          <div className="settings-field">
-            <label className="settings-label" htmlFor="tursoUrl">
-              🗄️ Turso URL
-            </label>
-            <input
-              id="tursoUrl"
-              type="text"
-              value={settings.tursoUrl}
-              onChange={e => setSettings(s => ({ ...s, tursoUrl: e.target.value }))}
-              placeholder="libsql://il-tuo-db.turso.io"
-              className="settings-input"
-              autoComplete="off"
-            />
-            <span className="settings-hint">
-              <a href="https://turso.tech" target="_blank" rel="noopener noreferrer" className="settings-link">
-                Crea un database
-              </a>{' '}
-              su Turso e incolla qui l'URL
-            </span>
-          </div>
-
-          <div className="settings-field">
-            <label className="settings-label" htmlFor="tursoToken">
-              🔐 Turso Token
-            </label>
-            <div className="settings-token-row">
-              <input
-                id="tursoToken"
-                type={showToken ? 'text' : 'password'}
-                value={settings.tursoToken}
-                onChange={e => setSettings(s => ({ ...s, tursoToken: e.target.value }))}
-                placeholder="eyJ..."
-                className="settings-input"
-                autoComplete="off"
-              />
-              <button
-                type="button"
-                onClick={() => setShowToken(s => !s)}
-                className="settings-toggle-btn"
-                title={showToken ? 'Nascondi token' : 'Mostra token'}
-              >
-                {showToken ? '🙈' : '👁️'}
-              </button>
-            </div>
-            <span className="settings-hint">
-              Token di autenticazione dal dashboard Turso
-            </span>
-          </div>
-
-          {/* Token GitHub */}
-          <div className="settings-field">
-            <label className="settings-label" htmlFor="githubToken">
-              🔑 Token GitHub
-            </label>
-            <div className="settings-token-row">
-              <input
-                id="githubToken"
-                type={showToken ? 'text' : 'password'}
-                value={settings.githubToken}
-                onChange={e => setSettings(s => ({ ...s, githubToken: e.target.value }))}
-                placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-                className="settings-input"
-                autoComplete="off"
-              />
-              <button
-                type="button"
-                onClick={() => setShowToken(s => !s)}
-                className="settings-toggle-btn"
-                title={showToken ? 'Nascondi token' : 'Mostra token'}
-              >
-                {showToken ? '🙈' : '👁️'}
-              </button>
-            </div>
-            <span className="settings-hint">
-              <a
-                href="https://github.com/settings/tokens"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="settings-link"
-              >
-                Crea un token
-              </a>{' '}
-              con scope <code>repo</code>. Non viene mai condiviso con altri.
-            </span>
-          </div>
-
           {/* Employee ID (copiabile) */}
           <div className="settings-field">
             <label className="settings-label">
@@ -325,10 +233,10 @@ export default function SettingsPage() {
         <div className="settings-info">
           <h3 className="settings-info-title">ℹ️ Come funziona</h3>
           <ul className="settings-info-list">
-            <li>Ogni membro del team inserisce il <strong>proprio</strong> token GitHub</li>
-            <li>Il token serve solo a leggere/scrivere il file <code>data/plans.json</code></li>
+            <li>Registrati con la tua email nella pagina di login</li>
+            <li>I dati sono salvati su <strong>Turso</strong> (SQLite nel cloud)</li>
             <li>Nome e sede determinano cosa vedi nella vista team</li>
-            <li>I dati sono salvati <strong>solo sul tuo browser</strong> (localStorage)</li>
+            <li>Tutto il team condivide lo stesso database</li>
           </ul>
         </div>
       </div>

@@ -14,8 +14,8 @@ import { computeTarget, describeSwRule } from '../shared/userProfile.ts'
 import type { SwRule } from '../shared/userProfile.ts'
 import { getCurrentUserProfile } from '../shared/msAuth.ts'
 import { save } from './savedWeeks.ts'
-import { createTimesheetFromSW } from '../timesheet/timesheetEngine.ts'
-import { addReleasedTimesheet } from '../shared/timesheetBridge.ts'
+import { savePlanning } from '../shared/planBackend.ts'
+import { getCurrentWeekStart } from './teamWatcher.ts'
 import UserBadge from './UserBadge.tsx'
 
 const DAY_LABELS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven'] as const
@@ -69,8 +69,9 @@ export default function SmartWorkingApp() {
   const [saving, setSaving] = useState(false)
   const [saveMsg, setSaveMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
-  // ── Rilascio ──
-  const [releaseMsg, setReleaseMsg] = useState<string | null>(null)
+  // ── Pubblicazione ──
+  const [publishing, setPublishing] = useState(false)
+  const [publishMsg, setPublishMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   const userProfile = getCurrentUserProfile()
   const displayName = userProfile?.employeeName ?? 'Utente'
@@ -130,31 +131,33 @@ export default function SmartWorkingApp() {
     setTimeout(() => setSaveMsg(null), 3000)
   }
 
-  // ── Rilascia (crea timesheet) ──
-  const handleRelease = () => {
+  // ── Pubblica (salva sul backend così il team vede) ──
+  const handlePublish = async () => {
     if (selectedPerm === null) return
     const perm = permutations[selectedPerm]
     if (!perm || !perm.valid) return
 
-    const ts = createTimesheetFromSW(
-      resourceNo, displayName,
-      perm.week, getWeekNumber(new Date().toISOString()),
-      sedeCode,
-      undefined // jobNo
-    )
+    setPublishing(true)
+    setPublishMsg(null)
 
-    addReleasedTimesheet(ts)
-    setReleaseMsg(`Timesheet ${ts.header.no} creato e inviato in approvazione!`)
-    setTimeout(() => setReleaseMsg(null), 4000)
-  }
+    const weekStart = getCurrentWeekStart()
+    const result = await savePlanning({
+      employeeId: resourceNo,
+      employeeName: displayName,
+      department: userProfile?.department || 'IT',
+      locationCode: sedeCode,
+      weekStart,
+      week: perm.week,
+      swDaysRequested: perm.totalSW,
+    })
 
-  // Helper per week number
-  const getWeekNumber = (dateStr: string): number => {
-    const d = new Date(dateStr)
-    const dayNum = d.getUTCDay() || 7
-    d.setUTCDate(d.getUTCDate() + 4 - dayNum)
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
-    return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)
+    setPublishing(false)
+    if (result.success) {
+      setPublishMsg({ type: 'success', text: `Pianificazione pubblicata per la settimana del ${weekStart}! Il team può vederla.` })
+    } else {
+      setPublishMsg({ type: 'error', text: result.error || 'Errore durante la pubblicazione' })
+    }
+    setTimeout(() => setPublishMsg(null), 5000)
   }
 
   return (
@@ -299,12 +302,20 @@ export default function SmartWorkingApp() {
               )}
               {saveMsg && <p className="text-center text-xs" style={{ color: saveMsg.type === 'success' ? 'var(--text-green)' : 'var(--text-red)' }}>{saveMsg.text}</p>}
 
-              {/* Rilascia */}
-              <button onClick={handleRelease} className="w-full py-2.5 rounded-full text-sm font-semibold text-white transition-all"
-                style={{ background: 'var(--accent-blue)', boxShadow: '0 2px 12px rgba(0,122,255,0.3)' }}>
-                📤 Rilascia settimana (crea Timesheet)
+              {/* Pubblica */}
+              <button
+                onClick={handlePublish}
+                disabled={publishing}
+                className="w-full py-2.5 rounded-full text-sm font-semibold text-white transition-all disabled:opacity-50"
+                style={{ background: 'var(--accent-blue)', boxShadow: '0 2px 12px rgba(0,122,255,0.3)' }}
+              >
+                {publishing ? '⏳ Pubblicazione...' : '📤 Pubblica pianificazione'}
               </button>
-              {releaseMsg && <p className="text-center text-xs mt-1" style={{ color: 'var(--text-green)' }}>{releaseMsg}</p>}
+              {publishMsg && (
+                <p className="text-center text-xs mt-1" style={{ color: publishMsg.type === 'success' ? 'var(--text-green)' : 'var(--text-red)' }}>
+                  {publishMsg.text}
+                </p>
+              )}
             </div>
           )}
 

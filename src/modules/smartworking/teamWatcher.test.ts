@@ -18,11 +18,11 @@ const localStorageMock = (() => {
 })()
 
 // Mock fetchEmployeePlan per evitare chiamate reali
-vi.mock('../shared/businessCentral.ts', () => ({
+vi.mock('../shared/planBackend.ts', () => ({
   fetchEmployeePlan: vi.fn(),
 }))
 
-import { fetchEmployeePlan } from '../shared/businessCentral.ts'
+import { fetchEmployeePlan } from '../shared/planBackend.ts'
 
 beforeEach(() => {
   global.localStorage = localStorageMock

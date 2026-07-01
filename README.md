@@ -29,6 +29,33 @@ Calcolatore giorni di smart working basato sull'accordo aziendale del 60% delle 
 - **Tailwind CSS v4**
 - **gh-pages** per deployment su GitHub Pages
 
+## 🔧 Backend
+
+L'app supporta **tre modalità di backend**, selezionabili via `config.ts`:
+
+| Modalità | Flag | Descrizione |
+|---|---|---|
+| **Mock** (default) | `bcIntegration: false`, `githubBackend: false` | Dati fittizi in memoria, per sviluppo |
+| **GitHub JSON** | `githubBackend: true` | File `data/plans.json` nel repo come database condiviso. Zero server. |
+| **Business Central** | `bcIntegration: true` | Chiamate OData a BC (richiede tenant configurato) |
+
+### Backend GitHub (consigliato per team)
+
+1. Crea un [GitHub Personal Access Token](https://github.com/settings/tokens) con scope `repo`
+2. In `src/modules/shared/config.ts`, imposta:
+   ```ts
+   features: { githubBackend: true },
+   github: {
+     token: 'ghp_xxxxxxxxxxxx',  // Il tuo PAT
+     owner: 'Chuucommie',
+     repo: 'SmartWorkingDays',
+     branch: 'main',
+     plansPath: 'data/plans.json',
+   }
+   ```
+3. Ogni membro del team usa il **proprio token** — le pianificazioni vengono lette/scritte via GitHub API sul file `data/plans.json` condiviso
+4. La Git history fa da audit log naturale
+
 ## 🚀 Sviluppo Locale
 
 ```bash

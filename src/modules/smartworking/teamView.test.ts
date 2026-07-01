@@ -3,9 +3,36 @@ import {
   computeOfficeOverlaps,
   computeFullOverlapMatrix,
   bcPlanToInternal,
+  extractLocations,
 } from './teamView.ts'
 
 describe('teamView', () => {
+  describe('extractLocations()', () => {
+    it('estrai sedi uniche da array di piani', () => {
+      const plans = [
+        { locationCode: 'TREVISO' },
+        { locationCode: 'BOLOGNA' },
+        { locationCode: 'TREVISO' },
+        { locationCode: 'MILANO' },
+      ]
+      const locs = extractLocations(plans)
+      expect(locs).toEqual(['BOLOGNA', 'MILANO', 'TREVISO'])
+    })
+
+    it('ritorna array vuoto per input vuoto', () => {
+      expect(extractLocations([])).toEqual([])
+    })
+
+    it('gestisce locationCode mancanti', () => {
+      const plans = [
+        { locationCode: 'TREVISO' },
+        { locationCode: '' },
+        {},
+      ]
+      const locs = extractLocations(plans)
+      expect(locs).toEqual(['TREVISO'])
+    })
+  })
   describe('computeOfficeOverlaps()', () => {
     it('ritorna {} se myPlan è null', () => {
       const result = computeOfficeOverlaps(null, [])

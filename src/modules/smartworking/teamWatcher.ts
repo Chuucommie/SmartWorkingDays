@@ -10,7 +10,7 @@
 // In sviluppo, usa mock data da config.
 // ──────────────────────────────────────────────
 
-import { fetchEmployeePlan } from '../shared/businessCentral.ts'
+import { fetchEmployeePlan } from '../shared/planBackend.ts'
 import { APP_CONFIG } from '../shared/config.ts'
 import type { WeekPlan } from '../shared/config.ts'
 

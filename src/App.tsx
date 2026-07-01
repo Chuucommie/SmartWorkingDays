@@ -1,13 +1,16 @@
 // ──────────────────────────────────────────────
 // EOS Timesheet — Layout principale (React Router v6)
 // ──────────────────────────────────────────────
+import { useEffect } from 'react'
 import { Routes, Route, NavLink } from 'react-router-dom'
 import { isFeatureEnabled } from './modules/shared/config.ts'
+import { initPlanBackend } from './modules/shared/planBackend.ts'
 import { useTheme } from './modules/shared/ThemeProvider.tsx'
 import Dashboard from './Dashboard.tsx'
 import SmartWorkingApp from './modules/smartworking/SmartWorkingApp.tsx'
 import TeamViewPage from './modules/smartworking/TeamViewPage.tsx'
 import SavedWeeksPage from './modules/smartworking/SavedWeeksPage.tsx'
+import SettingsPage from './modules/smartworking/SettingsPage.tsx'
 import TimesheetApp from './modules/timesheet/TimesheetApp.tsx'
 
 /**
@@ -15,6 +18,13 @@ import TimesheetApp from './modules/timesheet/TimesheetApp.tsx'
  */
 export default function App() {
   const { theme, toggleTheme } = useTheme()
+
+  // Inizializza il backend (GitHub o BC) all'avvio
+  useEffect(() => {
+    initPlanBackend().catch(err =>
+      console.warn('[App] Inizializzazione backend fallita:', err)
+    )
+  }, [])
 
   return (
     <div className="app-shell">
@@ -35,6 +45,9 @@ export default function App() {
                 ⏱️ Timesheet
               </NavLink>
             )}
+            <NavLink to="/settings" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+              ⚙️
+            </NavLink>
             {/* Apple-style theme toggle switch */}
             <button
               onClick={toggleTheme}
@@ -56,6 +69,7 @@ export default function App() {
           <Route path="/smartworking" element={<SmartWorkingApp />} />
           <Route path="/smartworking/team" element={<TeamViewPage />} />
           <Route path="/smartworking/saved" element={<SavedWeeksPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
           <Route path="/timesheet" element={<TimesheetApp />} />
         </Routes>
       </main>

@@ -11,6 +11,7 @@
 
 import { APP_CONFIG, getMockEmployeeData, MOCK_USER_ID } from './config.ts'
 import type { EmployeeData } from './config.ts'
+import { loadSettings } from './settings.ts'
 
 /** Stato corrente dell'autenticazione */
 export interface AuthState {
@@ -41,14 +42,24 @@ export async function initializeAuth(): Promise<AuthState> {
 
   if (clientId === 'YOUR_CLIENT_ID_HERE') {
     // ── MOCK MODE ──
-    // Nessun client ID configurato → usa dati mock
-    console.info('[msAuth] Mock mode — usando dati dipendente da config')
+    // Nessun client ID configurato → usa dati da settings o mock
+    console.info('[msAuth] Mock mode — usando dati da settings o config')
+    const userSettings = loadSettings()
     const mockEmployee = getMockEmployeeData()
+
+    // Sovrascrivi con i dati dalle impostazioni utente se configurati
+    const profile: EmployeeData = {
+      ...mockEmployee,
+      employeeId: userSettings.employeeId || mockEmployee.employeeId,
+      employeeName: userSettings.displayName || mockEmployee.employeeName,
+      locationCode: userSettings.location || mockEmployee.locationCode,
+    }
+
     authState = {
       isAuthenticated: true,
-      account: { username: mockEmployee.email, name: mockEmployee.employeeName },
+      account: { username: profile.email, name: profile.employeeName },
       accessToken: 'mock-token-for-development',
-      userProfile: mockEmployee,
+      userProfile: profile,
     }
     notifyListeners()
     return authState

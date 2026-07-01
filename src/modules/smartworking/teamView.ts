@@ -4,13 +4,16 @@
 //
 // Modulo puro (zero dipendenze DOM/React).
 // Recupera le pianificazioni del team e calcola le coincidenze.
-// In produzione, i dati arrivano da BC OData.
-// In sviluppo, usa mock data da config.
+// Supporta filtro per sede (Treviso, Bologna, Milano).
 // ──────────────────────────────────────────────
 
-import { fetchTeamPlans } from '../shared/businessCentral.ts'
-import { getCurrentEmployeeId, getCurrentUserProfile } from '../shared/msAuth.ts'
-import type { TeamPlan, WeekPlan, EmployeeData } from '../shared/config.ts'
+import { fetchTeamPlans } from '../shared/planBackend.ts'
+import { getCurrentUserProfile } from '../shared/msAuth.ts'
+import type { TeamPlan, WeekPlan, DayState } from '../shared/config.ts'
+
+/** Sedi disponibili */
+export const LOCATIONS = ['TREVISO', 'BOLOGNA', 'MILANO'] as const
+export type LocationCode = typeof LOCATIONS[number]
 
 /** Risultato della vista team */
 export interface TeamViewResult {
@@ -18,16 +21,33 @@ export interface TeamViewResult {
   colleagues: TeamPlan[]
   department: string
   location: string
+  allLocations: string[]
 }
 
 /** Mappa giorno → nomi colleghi in ufficio */
 export type OfficeOverlaps = Record<number, string[]>
 
 /**
- * Recupera e filtra le pianificazioni del team per la settimana.
- * Filtra per stesso dipartimento e stessa sede dell'utente corrente.
+ * Estrae tutte le sedi distinte dalle pianificazioni.
  */
-export async function getTeamView(weekStart: string): Promise<TeamViewResult> {
+export function extractLocations(plans: TeamPlan[]): string[] {
+  const locs = new Set<string>()
+  for (const p of plans) {
+    if (p.locationCode) locs.add(p.locationCode)
+  }
+  return Array.from(locs).sort()
+}
+
+/**
+ * Recupera e filtra le pianificazioni del team per la settimana.
+ * @param weekStart Data inizio settimana (ISO)
+ * @param locationFilter Sede da filtrare. Se undefined, usa la sede dell'utente.
+ *                       Passa 'ALL' per vedere tutte le sedi.
+ */
+export async function getTeamView(
+  weekStart: string,
+  locationFilter?: string
+): Promise<TeamViewResult> {
   const myProfile = getCurrentUserProfile()
   if (!myProfile) {
     throw new Error('Utente non autenticato — impossibile determinare dipartimento e sede')
@@ -37,14 +57,21 @@ export async function getTeamView(weekStart: string): Promise<TeamViewResult> {
   const myDepartment = myProfile.department
   const myLocation = myProfile.locationCode
 
-  // Recupera TUTTE le pianificazioni della settimana da BC (o mock)
+  // Recupera TUTTE le pianificazioni della settimana
   const allPlans = await fetchTeamPlans(weekStart)
 
-  // Filtra: stesso dipartimento E stessa sede
-  const teamPlans = allPlans.filter(p =>
-    p.department === myDepartment &&
-    p.locationCode === myLocation
-  )
+  // Estrai tutte le sedi disponibili
+  const allLocations = extractLocations(allPlans)
+
+  // Determina il filtro sede
+  const effectiveFilter = locationFilter === 'ALL' ? undefined : (locationFilter || myLocation)
+
+  // Filtra: stesso dipartimento + (opzionale) stessa sede
+  const teamPlans = allPlans.filter(p => {
+    if (p.department !== myDepartment) return false
+    if (effectiveFilter && p.locationCode !== effectiveFilter) return false
+    return true
+  })
 
   // Separa il piano dell'utente da quello dei colleghi
   const myPlan = teamPlans.find(p => p.employeeId === myEmployeeId) || null
@@ -54,7 +81,8 @@ export async function getTeamView(weekStart: string): Promise<TeamViewResult> {
     myPlan,
     colleagues,
     department: myDepartment,
-    location: myLocation,
+    location: effectiveFilter || 'Tutte',
+    allLocations,
   }
 }
 
@@ -71,7 +99,6 @@ export function computeOfficeOverlaps(
   if (!myPlan || !myPlan.week) return overlaps
 
   for (let day = 0; day < 5; day++) {
-    // Se l'utente non è in ufficio quel giorno, nessuna coincidenza da segnalare
     if (myPlan.week[day] !== 'office') continue
 
     const colleaguesInOffice = colleagues
@@ -88,7 +115,6 @@ export function computeOfficeOverlaps(
 
 /**
  * Versione estesa: calcola TUTTE le coincidenze tra TUTTI i membri del team.
- * Restituisce una matrice giorni × colleghi per heatmap.
  */
 export function computeFullOverlapMatrix(
   myPlan: TeamPlan | null,
@@ -109,7 +135,7 @@ export interface BcPlanRaw {
   employeeId?: string
   employeeNo?: string
   employeeName?: string
-  employee?: { firstName?: string; lastName?: string }
+  employee?: { firstName?: string; lastName?: string; department?: string; locationCode?: string }
   department?: string
   locationCode?: string
   monday?: string
@@ -122,12 +148,10 @@ export interface BcPlanRaw {
 
 /**
  * Converte una pianificazione BC nel formato interno dell'app.
- * Funzione pura, testabile.
  */
 export function bcPlanToInternal(bcPlan: BcPlanRaw | null): TeamPlan | null {
   if (!bcPlan) return null
 
-  // Mappa enum BC → stati interni
   const dayTypeMap: Record<string, DayState> = {
     'Free': 'free',
     'SmartWorking': 'sw',

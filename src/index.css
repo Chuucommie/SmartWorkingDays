@@ -671,8 +671,9 @@ body {
 }
 
 /* ── Team View ── */
+/* ── Team View (Card-based) ── */
 .team-view-page {
-  max-width: 640px;
+  max-width: 720px;
   margin: 0 auto;
   padding: 24px 16px 48px;
 }
@@ -681,116 +682,368 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   flex-wrap: wrap;
   gap: 12px;
 }
 
 .team-title {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
   color: var(--text-primary);
-  margin: 0;
+  margin: 0 0 4px;
 }
 
 .team-meta {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-secondary);
+  margin: 0;
 }
 
-.team-table-card {
+/* ── Controlli: navigazione settimana + filtro sede ── */
+.team-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.week-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.week-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  min-width: 140px;
+  text-align: center;
+}
+
+.ctrl-btn {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: 10px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.ctrl-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.location-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.filter-select {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: 10px;
+  padding: 6px 12px;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238E8E93' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 30px;
+}
+
+.filter-select:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+}
+
+/* ── Griglia card membri ── */
+.team-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 600px) {
+  .team-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ── Card membro ── */
+.member-card {
   background: var(--bg-card);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid var(--border-glass);
-  border-radius: 20px;
-  overflow: hidden;
+  border-radius: 18px;
+  padding: 16px;
   box-shadow: var(--shadow-card);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.team-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
+.member-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card-hover);
 }
 
-.team-table th {
-  text-align: left;
-  padding: 12px 14px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  border-bottom: 1px solid var(--border-secondary);
-  background: var(--team-table-header-bg);
+.member-card-self {
+  border-color: var(--border-green);
+  background: linear-gradient(135deg, rgba(52, 199, 89, 0.04), var(--bg-card));
 }
 
-.team-table td {
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border-tertiary);
+.member-card-empty {
+  text-align: center;
+  padding: 24px 16px;
+}
+
+/* ── Intestazione card ── */
+.member-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+
+.member-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.member-name {
+  font-size: 15px;
+  font-weight: 600;
   color: var(--text-primary);
 }
 
-.team-table tr:last-child td {
-  border-bottom: none;
+.member-location {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
-.team-table tr.row-self {
-  background: var(--team-self-bg);
+.member-stats {
+  display: flex;
+  gap: 6px;
 }
 
-.team-table tr.row-self td:first-child {
+.stat-badge {
+  font-size: 12px;
   font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 9999px;
 }
 
-.team-day-cell {
-  text-align: center;
+.stat-sw {
+  background: rgba(52, 199, 89, 0.1);
+  color: var(--text-green);
+}
+
+.stat-office {
+  background: rgba(0, 122, 255, 0.08);
+  color: var(--text-blue);
+}
+
+/* ── Griglia giorni ── */
+.member-days {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.day-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border-radius: 12px;
+  background: var(--bg-hover);
+  transition: all 0.15s ease;
   position: relative;
 }
 
-.team-day-icon {
-  font-size: 16px;
-}
-
-.team-overlap-badge {
-  display: inline-block;
+.day-label {
   font-size: 10px;
   font-weight: 600;
-  color: var(--text-link);
-  background: var(--bg-badge-blue);
-  padding: 1px 6px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  letter-spacing: 0.3px;
+}
+
+.day-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* Stati giorno */
+.day-sw {
+  background: rgba(52, 199, 89, 0.1);
+}
+.day-sw .day-label { color: var(--text-green); }
+
+.day-office {
+  background: rgba(0, 122, 255, 0.08);
+}
+.day-office .day-label { color: var(--text-blue); }
+
+.day-absent {
+  background: rgba(255, 59, 48, 0.06);
+}
+.day-absent .day-label { color: var(--text-red); }
+
+.day-free {
+  background: var(--bg-hover);
+  opacity: 0.6;
+}
+
+/* Badge coincidenza */
+.day-overlap-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--accent-blue);
+  color: white;
+  padding: 1px 5px;
   border-radius: 9999px;
-  margin-left: 4px;
-  cursor: help;
+  line-height: 1.3;
+  box-shadow: 0 1px 4px rgba(0, 122, 255, 0.3);
 }
 
-.team-watch-cell {
-  text-align: center;
+.has-overlap {
+  box-shadow: inset 0 0 0 2px var(--accent-blue);
 }
 
-.team-watch-btn {
+/* ── Footer card ── */
+.member-footer {
+  margin-top: 10px;
+  text-align: right;
+}
+
+.watch-btn {
   font-size: 11px;
   font-weight: 500;
   color: var(--text-secondary);
-  background: var(--team-watch-btn-bg);
-  border: 1px solid var(--team-watch-btn-border);
+  background: transparent;
+  border: 1px solid var(--border-primary);
   border-radius: 9999px;
-  padding: 3px 10px;
+  padding: 4px 12px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.team-watch-btn.watching {
+.watch-btn.watching {
   color: var(--text-link);
-  border-color: var(--team-watch-btn-watching-border);
-  background: var(--team-watch-btn-watching-bg);
+  border-color: var(--accent-blue);
+  background: rgba(0, 122, 255, 0.06);
 }
 
-.team-watch-btn:hover {
-  border-color: var(--team-watch-btn-watching-border);
+.watch-btn:hover {
+  border-color: var(--accent-blue);
 }
 
+/* ── Messaggio "non pianificato" ── */
+.no-plan-msg {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+}
+
+.plan-link {
+  color: var(--text-link);
+  font-weight: 500;
+  text-decoration: none;
+  margin-left: 4px;
+}
+
+.plan-link:hover {
+  text-decoration: underline;
+}
+
+/* ── Riepilogo coincidenze ── */
+.overlap-summary {
+  margin-top: 24px;
+  background: var(--bg-card);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--border-glass);
+  border-radius: 18px;
+  padding: 16px 20px;
+  box-shadow: var(--shadow-card);
+}
+
+.overlap-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 12px;
+}
+
+.overlap-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.overlap-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.overlap-day {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-blue);
+  background: rgba(0, 122, 255, 0.08);
+  padding: 2px 8px;
+  border-radius: 6px;
+  min-width: 36px;
+  text-align: center;
+}
+
+.overlap-names {
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+/* ── Footer link navigazione ── */
+.team-footer-links {
+  text-align: center;
+  margin-top: 24px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ── Empty state ── */
 .team-empty {
   text-align: center;
   padding: 40px 20px;
@@ -811,6 +1064,281 @@ body {
 .team-empty-sub {
   font-size: 12px;
   margin: 0;
+}
+
+/* ── Settings Page ── */
+.settings-page {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.settings-card {
+  border-radius: 24px;
+  padding: 28px 24px;
+}
+
+.settings-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.settings-icon {
+  font-size: 40px;
+  margin-bottom: 8px;
+}
+
+.settings-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+
+.settings-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 0 12px;
+}
+
+.settings-status {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 9999px;
+}
+
+.settings-status.configured {
+  background: rgba(52, 199, 89, 0.1);
+  color: var(--text-green);
+}
+
+.settings-status.not-configured {
+  background: rgba(255, 149, 0, 0.1);
+  color: #FF9500;
+}
+
+/* Form */
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.settings-input {
+  font-size: 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border-primary);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.15s ease;
+  font-family: inherit;
+}
+
+.settings-input:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+}
+
+.settings-input.readonly {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: var(--bg-hover);
+}
+
+.settings-select {
+  font-size: 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border-primary);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238E8E93' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+  font-family: inherit;
+}
+
+.settings-select:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+}
+
+.settings-token-row {
+  display: flex;
+  gap: 8px;
+}
+
+.settings-token-row .settings-input {
+  flex: 1;
+}
+
+.settings-toggle-btn {
+  font-size: 18px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border-primary);
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  line-height: 1;
+}
+
+.settings-toggle-btn:hover {
+  background: var(--bg-hover);
+}
+
+.settings-hint {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.settings-link {
+  color: var(--text-link);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.settings-link:hover {
+  text-decoration: underline;
+}
+
+.settings-hint code {
+  font-size: 10px;
+  background: var(--bg-hover);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: 'SF Mono', 'Menlo', monospace;
+}
+
+/* Messaggi */
+.settings-error {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-red);
+  background: rgba(255, 59, 48, 0.06);
+  padding: 10px 14px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.settings-success {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-green);
+  background: rgba(52, 199, 89, 0.08);
+  padding: 10px 14px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+/* Azioni */
+.settings-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.settings-save-btn {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  background: var(--accent-green);
+  border: none;
+  border-radius: 14px;
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 12px rgba(52, 199, 89, 0.3);
+}
+
+.settings-save-btn:hover {
+  background: var(--accent-green-dark);
+  transform: translateY(-1px);
+}
+
+.settings-reset-btn {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-primary);
+  border-radius: 14px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.settings-reset-btn:hover {
+  color: var(--text-red);
+  border-color: rgba(255, 59, 48, 0.3);
+}
+
+/* Info box */
+.settings-info {
+  margin-top: 24px;
+  padding: 16px;
+  background: var(--bg-hover);
+  border-radius: 14px;
+}
+
+.settings-info-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 10px;
+}
+
+.settings-info-list {
+  margin: 0;
+  padding: 0 0 0 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-info-list li {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.settings-info-list code {
+  font-size: 10px;
+  background: var(--bg-card);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+/* Footer */
+.settings-footer-links {
+  text-align: center;
+  margin-top: 24px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 /* ── Saved Weeks ── */
@@ -1311,8 +1839,10 @@ body {
   .dashboard-page { padding: 24px 12px 40px; }
   .module-card { padding: 16px 18px; }
   .team-view-page { padding: 16px 12px 40px; }
-  .team-table { font-size: 12px; }
-  .team-table th, .team-table td { padding: 8px 10px; }
+  .team-cards { grid-template-columns: 1fr; }
+  .member-days { gap: 4px; }
+  .day-cell { padding: 6px 2px; }
+  .day-icon { font-size: 16px; }
   .notification-dropdown { width: 280px; right: -40px; }
 }
 

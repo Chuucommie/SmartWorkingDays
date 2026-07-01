@@ -82,6 +82,13 @@ export interface AppConfig {
   teams: {
     webhookUrl: string
   }
+  github: {
+    token: string
+    owner: string
+    repo: string
+    branch: string
+    plansPath: string
+  }
   features: Record<string, boolean>
   polling: {
     teamWatcherIntervalMs: number
@@ -138,6 +145,18 @@ export const APP_CONFIG: AppConfig = {
     webhookUrl: '',  // Lasciare vuoto se non configurato
   },
 
+  // ── GitHub Backend ──
+  // Backend alternativo: usa un file JSON nel repo come database condiviso.
+  // Richiede un GitHub Personal Access Token (classic o fine-grained) con scope repo.
+  // Vedi: https://github.com/settings/tokens
+  github: {
+    token: '',                          // GitHub PAT (NON committare il token reale!)
+    owner: 'Chuucommie',               // Username o org proprietaria del repo
+    repo: 'SmartWorkingDays',          // Nome del repository
+    branch: 'main',                    // Branch dove risiede data/plans.json
+    plansPath: 'data/plans.json',      // Percorso del file JSON nel repo
+  },
+
   // ── Feature flags ──
   // Attivare/disattivare moduli senza modificare il codice
   features: {
@@ -149,6 +168,7 @@ export const APP_CONFIG: AppConfig = {
     outlookIntegration: false, // Import/export calendario Outlook
     teamsNotifications: false, // Notifiche canale Teams
     bcIntegration: false,     // Salvataggio pianificazioni su BC
+    githubBackend: false,    // Backend alternativo via GitHub API (JSON file-based)
   },
 
   // ── Polling ──
@@ -180,7 +200,7 @@ export function getMockEmployeeData(): EmployeeData {
     employeeId: 'EMP001',
     employeeName: 'Ricardo Quintero',
     department: 'IT',
-    locationCode: 'MILANO',
+    locationCode: 'TREVISO',
     email: 'ricardo.quintero@eosprod.com',
   }
 }
@@ -191,40 +211,57 @@ export function getMockEmployeeData(): EmployeeData {
  */
 export function getMockTeamMembers(): EmployeeData[] {
   return [
+    // ── Sede TREVISO ──
     {
       employeeId: 'EMP001',
       employeeName: 'Ricardo Quintero',
       department: 'IT',
-      locationCode: 'MILANO',
+      locationCode: 'TREVISO',
       email: 'ricardo.quintero@eosprod.com',
     },
     {
       employeeId: 'EMP002',
       employeeName: 'Mario Rossi',
       department: 'IT',
-      locationCode: 'MILANO',
+      locationCode: 'TREVISO',
       email: 'mario.rossi@eosprod.com',
     },
     {
       employeeId: 'EMP003',
       employeeName: 'Anna Bianchi',
       department: 'IT',
-      locationCode: 'MILANO',
+      locationCode: 'TREVISO',
       email: 'anna.bianchi@eosprod.com',
     },
+    // ── Sede BOLOGNA ──
     {
       employeeId: 'EMP004',
       employeeName: 'Luca Verdi',
       department: 'IT',
-      locationCode: 'MILANO',
+      locationCode: 'BOLOGNA',
       email: 'luca.verdi@eosprod.com',
     },
     {
       employeeId: 'EMP005',
       employeeName: 'Sofia Neri',
       department: 'IT',
-      locationCode: 'ROMA',  // Sede diversa — non apparirà nella vista team
+      locationCode: 'BOLOGNA',
       email: 'sofia.neri@eosprod.com',
+    },
+    // ── Sede MILANO ──
+    {
+      employeeId: 'EMP006',
+      employeeName: 'Marco Gialli',
+      department: 'IT',
+      locationCode: 'MILANO',
+      email: 'marco.gialli@eosprod.com',
+    },
+    {
+      employeeId: 'EMP007',
+      employeeName: 'Elena Blu',
+      department: 'IT',
+      locationCode: 'MILANO',
+      email: 'elena.blu@eosprod.com',
     },
   ]
 }
@@ -234,13 +271,13 @@ export function getMockTeamMembers(): EmployeeData[] {
  * In produzione, questi dati arrivano da BC OData.
  */
 export function getMockTeamPlans(_weekStart: string): TeamPlan[] {
-  // Simula pianificazioni diverse per ogni membro
   return [
+    // ── Sede TREVISO ──
     {
       employeeId: 'EMP001',
       employeeName: 'Ricardo Quintero',
       department: 'IT',
-      locationCode: 'MILANO',
+      locationCode: 'TREVISO',
       week: ['sw', 'office', 'office', 'sw', 'sw'],
       swDaysRequested: 3,
     },
@@ -248,7 +285,7 @@ export function getMockTeamPlans(_weekStart: string): TeamPlan[] {
       employeeId: 'EMP002',
       employeeName: 'Mario Rossi',
       department: 'IT',
-      locationCode: 'MILANO',
+      locationCode: 'TREVISO',
       week: ['office', 'office', 'office', 'sw', 'sw'],
       swDaysRequested: 2,
     },
@@ -256,16 +293,42 @@ export function getMockTeamPlans(_weekStart: string): TeamPlan[] {
       employeeId: 'EMP003',
       employeeName: 'Anna Bianchi',
       department: 'IT',
-      locationCode: 'MILANO',
+      locationCode: 'TREVISO',
       week: ['sw', 'sw', 'office', 'office', 'office'],
       swDaysRequested: 2,
     },
+    // ── Sede BOLOGNA ──
     {
       employeeId: 'EMP004',
       employeeName: 'Luca Verdi',
       department: 'IT',
-      locationCode: 'MILANO',
+      locationCode: 'BOLOGNA',
       week: ['office', 'sw', 'sw', 'sw', 'office'],
+      swDaysRequested: 3,
+    },
+    {
+      employeeId: 'EMP005',
+      employeeName: 'Sofia Neri',
+      department: 'IT',
+      locationCode: 'BOLOGNA',
+      week: ['sw', 'sw', 'office', 'office', 'sw'],
+      swDaysRequested: 3,
+    },
+    // ── Sede MILANO ──
+    {
+      employeeId: 'EMP006',
+      employeeName: 'Marco Gialli',
+      department: 'IT',
+      locationCode: 'MILANO',
+      week: ['office', 'office', 'sw', 'sw', 'sw'],
+      swDaysRequested: 3,
+    },
+    {
+      employeeId: 'EMP007',
+      employeeName: 'Elena Blu',
+      department: 'IT',
+      locationCode: 'MILANO',
+      week: ['sw', 'office', 'sw', 'office', 'sw'],
       swDaysRequested: 3,
     },
   ]

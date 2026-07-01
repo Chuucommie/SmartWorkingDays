@@ -271,65 +271,7 @@ export function getMockTeamMembers(): EmployeeData[] {
  * In produzione, questi dati arrivano da BC OData.
  */
 export function getMockTeamPlans(_weekStart: string): TeamPlan[] {
-  return [
-    // ── Sede TREVISO ──
-    {
-      employeeId: 'EMP001',
-      employeeName: 'Ricardo Quintero',
-      department: 'IT',
-      locationCode: 'TREVISO',
-      week: ['sw', 'office', 'office', 'sw', 'sw'],
-      swDaysRequested: 3,
-    },
-    {
-      employeeId: 'EMP002',
-      employeeName: 'Mario Rossi',
-      department: 'IT',
-      locationCode: 'TREVISO',
-      week: ['office', 'office', 'office', 'sw', 'sw'],
-      swDaysRequested: 2,
-    },
-    {
-      employeeId: 'EMP003',
-      employeeName: 'Anna Bianchi',
-      department: 'IT',
-      locationCode: 'TREVISO',
-      week: ['sw', 'sw', 'office', 'office', 'office'],
-      swDaysRequested: 2,
-    },
-    // ── Sede BOLOGNA ──
-    {
-      employeeId: 'EMP004',
-      employeeName: 'Luca Verdi',
-      department: 'IT',
-      locationCode: 'BOLOGNA',
-      week: ['office', 'sw', 'sw', 'sw', 'office'],
-      swDaysRequested: 3,
-    },
-    {
-      employeeId: 'EMP005',
-      employeeName: 'Sofia Neri',
-      department: 'IT',
-      locationCode: 'BOLOGNA',
-      week: ['sw', 'sw', 'office', 'office', 'sw'],
-      swDaysRequested: 3,
-    },
-    // ── Sede MILANO ──
-    {
-      employeeId: 'EMP006',
-      employeeName: 'Marco Gialli',
-      department: 'IT',
-      locationCode: 'MILANO',
-      week: ['office', 'office', 'sw', 'sw', 'sw'],
-      swDaysRequested: 3,
-    },
-    {
-      employeeId: 'EMP007',
-      employeeName: 'Elena Blu',
-      department: 'IT',
-      locationCode: 'MILANO',
-      week: ['sw', 'office', 'sw', 'office', 'sw'],
-      swDaysRequested: 3,
-    },
-  ]
+  // Nessun dato finto — le pianificazioni vengono salvate in localStorage
+  // e popolate dagli utenti tramite "Pubblica pianificazione"
+  return []
 }

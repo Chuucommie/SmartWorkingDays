@@ -111,3 +111,38 @@ export function getLocation(): LocationCode | '' {
 export function getEmployeeId(): string {
   return loadSettings().employeeId
 }
+
+/**
+ * Esporta le impostazioni come stringa JSON (per backup o trasferimento).
+ */
+export function exportSettings(): string {
+  return JSON.stringify(loadSettings(), null, 2)
+}
+
+/**
+ * Importa impostazioni da una stringa JSON.
+ * @returns true se l'import è riuscito, false se il JSON non è valido
+ */
+export function importSettings(jsonString: string): boolean {
+  try {
+    const parsed = JSON.parse(jsonString) as Partial<UserSettings>
+    // Validazione minima
+    if (!parsed || typeof parsed !== 'object') return false
+
+    const settings: UserSettings = {
+      githubToken: typeof parsed.githubToken === 'string' ? parsed.githubToken : '',
+      displayName: typeof parsed.displayName === 'string' ? parsed.displayName : '',
+      location: (LOCATIONS as readonly string[]).includes(parsed.location || '')
+        ? (parsed.location as LocationCode)
+        : '',
+      employeeId: typeof parsed.employeeId === 'string' && parsed.employeeId.length > 0
+        ? parsed.employeeId
+        : generateEmployeeId(),
+    }
+
+    saveSettings(settings)
+    return true
+  } catch {
+    return false
+  }
+}

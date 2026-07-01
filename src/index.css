@@ -1295,6 +1295,28 @@ body {
   border-color: rgba(255, 59, 48, 0.3);
 }
 
+.settings-export-btn,
+.settings-import-btn {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-primary);
+  border-radius: 14px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.settings-export-btn:hover,
+.settings-import-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--accent-blue);
+}
+
 /* Info box */
 .settings-info {
   margin-top: 24px;

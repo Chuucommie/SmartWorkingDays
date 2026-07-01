@@ -89,6 +89,10 @@ export interface AppConfig {
     branch: string
     plansPath: string
   }
+  turso: {
+    url: string
+    token: string
+  }
   features: Record<string, boolean>
   polling: {
     teamWatcherIntervalMs: number
@@ -157,6 +161,14 @@ export const APP_CONFIG: AppConfig = {
     plansPath: 'data/plans.json',      // Percorso del file JSON nel repo
   },
 
+  // ── Turso Backend (SQLite hosted) ──
+  // Backend persistente basato su Turso (SQLite nel cloud).
+  // Vai su https://turso.tech, crea un database e ottieni URL + token.
+  turso: {
+    url: '',                            // URL del database (es. libsql://xxx.turso.io)
+    token: '',                          // Token di autenticazione Turso
+  },
+
   // ── Feature flags ──
   // Attivare/disattivare moduli senza modificare il codice
   features: {
@@ -168,7 +180,8 @@ export const APP_CONFIG: AppConfig = {
     outlookIntegration: false, // Import/export calendario Outlook
     teamsNotifications: false, // Notifiche canale Teams
     bcIntegration: false,     // Salvataggio pianificazioni su BC
-    githubBackend: false,    // Backend alternativo via GitHub API (JSON file-based)
+    githubBackend: false,    // Backend GitHub API (JSON file-based)
+    tursoBackend: false,     // Backend Turso (SQLite hosted)
   },
 
   // ── Polling ──

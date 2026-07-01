@@ -161,6 +161,56 @@ export default function SettingsPage() {
             </span>
           </div>
 
+          {/* Turso (SQLite) */}
+          <div className="settings-field">
+            <label className="settings-label" htmlFor="tursoUrl">
+              🗄️ Turso URL
+            </label>
+            <input
+              id="tursoUrl"
+              type="text"
+              value={settings.tursoUrl}
+              onChange={e => setSettings(s => ({ ...s, tursoUrl: e.target.value }))}
+              placeholder="libsql://il-tuo-db.turso.io"
+              className="settings-input"
+              autoComplete="off"
+            />
+            <span className="settings-hint">
+              <a href="https://turso.tech" target="_blank" rel="noopener noreferrer" className="settings-link">
+                Crea un database
+              </a>{' '}
+              su Turso e incolla qui l'URL
+            </span>
+          </div>
+
+          <div className="settings-field">
+            <label className="settings-label" htmlFor="tursoToken">
+              🔐 Turso Token
+            </label>
+            <div className="settings-token-row">
+              <input
+                id="tursoToken"
+                type={showToken ? 'text' : 'password'}
+                value={settings.tursoToken}
+                onChange={e => setSettings(s => ({ ...s, tursoToken: e.target.value }))}
+                placeholder="eyJ..."
+                className="settings-input"
+                autoComplete="off"
+              />
+              <button
+                type="button"
+                onClick={() => setShowToken(s => !s)}
+                className="settings-toggle-btn"
+                title={showToken ? 'Nascondi token' : 'Mostra token'}
+              >
+                {showToken ? '🙈' : '👁️'}
+              </button>
+            </div>
+            <span className="settings-hint">
+              Token di autenticazione dal dashboard Turso
+            </span>
+          </div>
+
           {/* Token GitHub */}
           <div className="settings-field">
             <label className="settings-label" htmlFor="githubToken">

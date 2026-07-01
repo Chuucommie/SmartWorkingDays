@@ -3,17 +3,18 @@
 // ──────────────────────────────────────────────
 //
 // Sceglie automaticamente il backend in base alla configurazione:
+//   - tursoBackend  = true  → usa tursoPlans.ts (SQLite hosted su Turso)
 //   - githubBackend = true  → usa githubPlans.ts (JSON nel repo)
-//   - bcIntegration  = true → usa businessCentral.ts (BC OData)
-//   - entrambi false         → localStorage (dati reali, senza server)
+//   - bcIntegration = true  → usa businessCentral.ts (BC OData)
+//   - nessuno                → localStorage (dati locali, senza server)
 //
 // I consumer (teamView, teamWatcher) importano da QUI,
-// non direttamente da businessCentral o githubPlans.
+// non direttamente da businessCentral, githubPlans o tursoPlans.
 // ──────────────────────────────────────────────
 
 import { APP_CONFIG } from './config.ts'
 import type { TeamPlan, WeekPlan } from './config.ts'
-import { getGitHubToken } from './settings.ts'
+import { getGitHubToken, getTursoUrl, getTursoToken } from './settings.ts'
 
 import * as BcBackend from './businessCentral.ts'
 import type { SaveResult } from './businessCentral.ts'
@@ -21,9 +22,23 @@ export type { SaveResult } from './businessCentral.ts'
 
 // ── Inizializzazione ──
 
+let _tursoInitialized = false
 let _githubInitialized = false
 
 export async function initPlanBackend(): Promise<void> {
+  // Turso (priorità massima)
+  if (APP_CONFIG.features.tursoBackend && !_tursoInitialized) {
+    const { initTursoBackend, ensureSchema } = await import('./tursoPlans.ts')
+    const url = getTursoUrl() || APP_CONFIG.turso.url
+    const token = getTursoToken() || APP_CONFIG.turso.token
+    initTursoBackend({ url, token })
+    await ensureSchema()
+    _tursoInitialized = true
+    console.info('[planBackend] Turso backend inizializzato')
+    return
+  }
+
+  // GitHub
   if (APP_CONFIG.features.githubBackend && !_githubInitialized) {
     const { initGitHubBackend } = await import('./githubPlans.ts')
     const token = getGitHubToken() || APP_CONFIG.github.token
@@ -39,7 +54,7 @@ export async function initPlanBackend(): Promise<void> {
   }
 }
 
-// ── localStorage backend (mock mode) ──
+// ── localStorage backend (fallback) ──
 
 const LOCAL_STORAGE_KEY = 'eos-team-plans'
 
@@ -72,16 +87,24 @@ function saveLocalPlans(plans: StoredPlan[]): void {
 // ── API pubbliche ──
 
 export async function fetchTeamPlans(weekStart: string): Promise<TeamPlan[]> {
+  // Turso
+  if (APP_CONFIG.features.tursoBackend) {
+    const { fetchTeamPlans: tursoFetch } = await import('./tursoPlans.ts')
+    return tursoFetch(weekStart)
+  }
+
+  // GitHub
   if (APP_CONFIG.features.githubBackend) {
     const { fetchTeamPlans: ghFetch } = await import('./githubPlans.ts')
     return ghFetch(weekStart)
   }
 
+  // BC
   if (APP_CONFIG.features.bcIntegration) {
     return BcBackend.fetchTeamPlans(weekStart)
   }
 
-  // localStorage mode: restituisce i piani salvati localmente
+  // localStorage
   const plans = loadLocalPlans()
   return plans
     .filter(p => p.weekStart === weekStart)
@@ -96,6 +119,11 @@ export async function fetchTeamPlans(weekStart: string): Promise<TeamPlan[]> {
 }
 
 export async function fetchEmployeePlan(employeeId: string, weekStart: string): Promise<TeamPlan | null> {
+  if (APP_CONFIG.features.tursoBackend) {
+    const { fetchEmployeePlan: tursoFetch } = await import('./tursoPlans.ts')
+    return tursoFetch(employeeId, weekStart)
+  }
+
   if (APP_CONFIG.features.githubBackend) {
     const { fetchEmployeePlan: ghFetch } = await import('./githubPlans.ts')
     return ghFetch(employeeId, weekStart)
@@ -118,6 +146,11 @@ export async function savePlanning(planning: {
   week: WeekPlan
   swDaysRequested: number
 }): Promise<SaveResult> {
+  if (APP_CONFIG.features.tursoBackend) {
+    const { savePlanning: tursoSave } = await import('./tursoPlans.ts')
+    return tursoSave(planning)
+  }
+
   if (APP_CONFIG.features.githubBackend) {
     const { savePlanning: ghSave } = await import('./githubPlans.ts')
     return ghSave(planning)
@@ -127,7 +160,7 @@ export async function savePlanning(planning: {
     return BcBackend.savePlanning(planning)
   }
 
-  // localStorage mode: salva localmente
+  // localStorage
   try {
     const plans = loadLocalPlans()
     const now = new Date().toISOString()

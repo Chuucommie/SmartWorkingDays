@@ -5,6 +5,7 @@ import { useEffect } from 'react'
 import { Routes, Route, NavLink } from 'react-router-dom'
 import { isFeatureEnabled } from './modules/shared/config.ts'
 import { initPlanBackend } from './modules/shared/planBackend.ts'
+import { initializeAuth } from './modules/shared/msAuth.ts'
 import { useTheme } from './modules/shared/ThemeProvider.tsx'
 import Dashboard from './Dashboard.tsx'
 import SmartWorkingApp from './modules/smartworking/SmartWorkingApp.tsx'
@@ -19,8 +20,13 @@ import TimesheetApp from './modules/timesheet/TimesheetApp.tsx'
 export default function App() {
   const { theme, toggleTheme } = useTheme()
 
-  // Inizializza il backend (GitHub o BC) all'avvio
+  // Inizializza auth e backend all'avvio
   useEffect(() => {
+    initializeAuth().then(() => {
+      console.info('[App] Auth inizializzata')
+    }).catch(err =>
+      console.warn('[App] Inizializzazione auth fallita:', err)
+    )
     initPlanBackend().catch(err =>
       console.warn('[App] Inizializzazione backend fallita:', err)
     )

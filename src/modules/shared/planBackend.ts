@@ -11,7 +11,6 @@
 
 import { APP_CONFIG } from './config.ts'
 import type { TeamPlan, WeekPlan } from './config.ts'
-import { getGitHubToken, getTursoUrl, getTursoToken } from './settings.ts'
 import { loadSession } from './tursoAuth.ts'
 
 import * as BcBackend from './businessCentral.ts'
@@ -26,10 +25,10 @@ let _githubInitialized = false
 export async function initPlanBackend(): Promise<void> {
   // Turso (priorità massima)
   if (APP_CONFIG.features.tursoBackend && !_tursoInitialized) {
-    const { initTursoBackend, ensureSchema } = await import('./tursoPlans.ts')
+    const { initTursoBackend } = await import('./tursoPlans.ts')
     const session = loadSession()
-    const url = getTursoUrl() || APP_CONFIG.turso.url
-    const token = session?.token || getTursoToken() || APP_CONFIG.turso.token
+    const url = APP_CONFIG.turso.url
+    const token = session?.token || APP_CONFIG.turso.token
     initTursoBackend({ url, token })
     _tursoInitialized = true
     console.info('[planBackend] Turso backend inizializzato')
@@ -39,7 +38,7 @@ export async function initPlanBackend(): Promise<void> {
   // GitHub
   if (APP_CONFIG.features.githubBackend && !_githubInitialized) {
     const { initGitHubBackend } = await import('./githubPlans.ts')
-    const token = getGitHubToken() || APP_CONFIG.github.token
+    const token = APP_CONFIG.github.token
     initGitHubBackend({
       token,
       owner: APP_CONFIG.github.owner,

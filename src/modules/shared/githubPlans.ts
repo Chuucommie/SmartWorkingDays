@@ -137,7 +137,7 @@ async function savePlansFile(plans: StoredPlan[], sha: string, commitMessage: st
   const content: PlansFile = { plans }
   const jsonStr = JSON.stringify(content, null, 2)
   // btoa in browser gestisce UTF-8 male, usiamo un encoder corretto
-  const base64 = btoa(unescape(encodeURIComponent(jsonStr)))
+  const base64 = btoa(String.fromCharCode(...new TextEncoder().encode(jsonStr)))
 
   await githubApi(path, {
     method: 'PUT',

@@ -76,8 +76,8 @@ export const APP_CONFIG: AppConfig = {
   },
 
   turso: {
-    url: 'libsql://smartworking-chuucommie.aws-eu-west-1.turso.io',
-    token: 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODI5MTg3NzIsImlkIjoiMDE5ZjFlM2MtZGIwMS03MDFhLTkwOGItMGYzMTliYjJlOWJhIiwia2lkIjoiRjVoR29MMUJuQmI0di1GdDhjcVVNRjkydjB6Nmo3cERPMkpkZkt4VnlocyIsInJpZCI6ImIxYTNiMzFlLWUwMDAtNDJjMS1hNTg4LTljMGJiOWVmZGUxZiJ9.HKwtKvcj9BfRK3nIG7anHDqptHS1shNo9UQVODh1LbkyRZyEtG3V2gVXgVaV7jn5mWP2ENiXP9t6B4y_khp2AQ',
+    url: import.meta.env.VITE_TURSO_URL || 'libsql://smartworking-chuucommie.aws-eu-west-1.turso.io',
+    token: import.meta.env.VITE_TURSO_TOKEN || '',
   },
 
   features: {

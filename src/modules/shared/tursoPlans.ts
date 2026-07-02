@@ -1,5 +1,6 @@
 // Turso Plans — HTTP client for browser
 import type { TeamPlan, WeekPlan } from './config.ts'
+import { sanitizeName } from './sanitize.ts'
 
 export interface TursoBackendConfig { url: string; token: string }
 export interface SaveResult { success: boolean; entryId?: string; error?: string }
@@ -75,9 +76,9 @@ export async function fetchTeamPlans(weekStart: string): Promise<TeamPlan[]> {
   return rows.map(function(row) {
     return {
       employeeId: row.user_id as string,
-      employeeName: row.employee_name as string,
-      department: (row.department as string) || 'IT',
-      locationCode: (row.location_code as string) || 'MILANO',
+      employeeName: sanitizeName(row.employee_name as string),
+      department: sanitizeName((row.department as string) || 'IT'),
+      locationCode: sanitizeName((row.location_code as string) || 'MILANO'),
       week: parseWeek(row.week_json as string),
       swDaysRequested: (row.sw_days_requested as number) || 0,
     }
@@ -90,9 +91,9 @@ export async function fetchEmployeePlan(userId: string, weekStart: string): Prom
   const row = rows[0]
   return {
     employeeId: row.user_id as string,
-    employeeName: row.employee_name as string,
-    department: (row.department as string) || 'IT',
-    locationCode: (row.location_code as string) || 'MILANO',
+    employeeName: sanitizeName(row.employee_name as string),
+    department: sanitizeName((row.department as string) || 'IT'),
+    locationCode: sanitizeName((row.location_code as string) || 'MILANO'),
     week: parseWeek(row.week_json as string),
     swDaysRequested: (row.sw_days_requested as number) || 0,
   }
@@ -122,9 +123,9 @@ export async function fetchTeamMembers(): Promise<Array<{
   const rows = await executeSql('SELECT id, name, department, location_code, email FROM users ORDER BY name')
   return rows.map(function(row) {
     return {
-      id: row.id as string, name: row.name as string,
-      department: (row.department as string) || 'IT',
-      locationCode: (row.location_code as string) || 'MILANO',
+      id: row.id as string, name: sanitizeName(row.name as string),
+      department: sanitizeName((row.department as string) || 'IT'),
+      locationCode: sanitizeName((row.location_code as string) || 'MILANO'),
       email: row.email as string,
     }
   })

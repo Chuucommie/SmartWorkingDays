@@ -17,12 +17,6 @@ import type { LocationCode } from '../smartworking/teamView.ts'
 // ── Tipi ──
 
 export interface UserSettings {
-  /** GitHub Personal Access Token (classic o fine-grained, scope repo) */
-  githubToken: string
-  /** Turso database URL (es. libsql://xxx.turso.io) */
-  tursoUrl: string
-  /** Turso auth token */
-  tursoToken: string
   /** Nome visualizzato nell'app (es. "Ricardo Quintero") */
   displayName: string
   /** Sede di appartenenza */
@@ -40,9 +34,6 @@ function generateEmployeeId(): string {
 }
 
 const DEFAULT_SETTINGS: UserSettings = {
-  githubToken: '',
-  tursoUrl: '',
-  tursoToken: '',
   displayName: '',
   location: '',
   employeeId: generateEmployeeId(),
@@ -62,9 +53,6 @@ export function loadSettings(): UserSettings {
     const parsed = JSON.parse(raw) as Partial<UserSettings>
 
     return {
-      githubToken: parsed.githubToken || '',
-      tursoUrl: parsed.tursoUrl || '',
-      tursoToken: parsed.tursoToken || '',
       displayName: parsed.displayName || '',
       location: (LOCATIONS as readonly string[]).includes(parsed.location || '')
         ? (parsed.location as LocationCode)
@@ -90,27 +78,6 @@ export function saveSettings(settings: UserSettings): void {
 export function isConfigured(): boolean {
   const s = loadSettings()
   return s.displayName.length > 0 && s.location.length > 0
-}
-
-/**
- * Restituisce il token GitHub configurato.
- */
-export function getGitHubToken(): string {
-  return loadSettings().githubToken
-}
-
-/**
- * Restituisce l'URL del database Turso configurato.
- */
-export function getTursoUrl(): string {
-  return loadSettings().tursoUrl
-}
-
-/**
- * Restituisce il token Turso configurato.
- */
-export function getTursoToken(): string {
-  return loadSettings().tursoToken
 }
 
 /**
@@ -152,9 +119,6 @@ export function importSettings(jsonString: string): boolean {
     if (!parsed || typeof parsed !== 'object') return false
 
     const settings: UserSettings = {
-      githubToken: typeof parsed.githubToken === 'string' ? parsed.githubToken : '',
-      tursoUrl: typeof parsed.tursoUrl === 'string' ? parsed.tursoUrl : '',
-      tursoToken: typeof parsed.tursoToken === 'string' ? parsed.tursoToken : '',
       displayName: typeof parsed.displayName === 'string' ? parsed.displayName : '',
       location: (LOCATIONS as readonly string[]).includes(parsed.location || '')
         ? (parsed.location as LocationCode)

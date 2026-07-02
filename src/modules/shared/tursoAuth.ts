@@ -1,5 +1,6 @@
 // Turso Auth — register/login via SQLite
 import type { TursoBackendConfig } from './tursoPlans.ts'
+import { sanitizeName } from './sanitize.ts'
 
 export interface AuthUser {
   id: string; email: string; name: string; department: string; locationCode: string
@@ -39,9 +40,24 @@ export function isLoggedIn(): boolean {
 
 async function hashPassword(password: string, salt: string): Promise<string> {
   const encoder = new TextEncoder()
-  const data = encoder.encode(password + salt)
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(password),
+    'PBKDF2',
+    false,
+    ['deriveBits']
+  )
+  const derivedBits = await crypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      salt: encoder.encode(salt),
+      iterations: 600_000,
+      hash: 'SHA-256',
+    },
+    keyMaterial,
+    256
+  )
+  const hashArray = Array.from(new Uint8Array(derivedBits))
   return hashArray.map(function(b) { return b.toString(16).padStart(2, '0') }).join('')
 }
 
@@ -52,7 +68,9 @@ function generateSalt(): string {
 }
 
 function generateUserId(): string {
-  return 'usr_' + Math.random().toString(36).substring(2, 10)
+  const arr = new Uint8Array(8)
+  crypto.getRandomValues(arr)
+  return 'usr_' + Array.from(arr, function(b) { return b.toString(36) }).join('').replace(/0/g, '')
 }
 
 let _config: TursoBackendConfig | null = null
@@ -120,11 +138,14 @@ export async function register(
     const salt = generateSalt()
     const passwordHash = await hashPassword(password, salt)
     const now = new Date().toISOString()
+    const safeName = sanitizeName(name)
+    const safeDepartment = sanitizeName(department)
+    const safeLocation = sanitizeName(locationCode)
     await executeSql(
       'INSERT INTO users (id, email, password_hash, name, department, location_code, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [id, email, salt + ':' + passwordHash, name, department, locationCode, now, now]
+      [id, email, salt + ':' + passwordHash, safeName, safeDepartment, safeLocation, now, now]
     )
-    const user: AuthUser = { id, email, name, department, locationCode }
+    const user: AuthUser = { id, email, name: safeName, department: safeDepartment, locationCode: safeLocation }
     return { success: true, user }
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error'

@@ -9,6 +9,7 @@
 
 import { fetchTeamPlans } from '../shared/planBackend.ts'
 import { getCurrentUserProfile } from '../shared/msAuth.ts'
+import { loadSession } from '../shared/tursoAuth.ts'
 import type { TeamPlan, WeekPlan, DayState } from '../shared/config.ts'
 
 /** Sedi disponibili */
@@ -48,14 +49,25 @@ export async function getTeamView(
   weekStart: string,
   locationFilter?: string
 ): Promise<TeamViewResult> {
-  const myProfile = getCurrentUserProfile()
-  if (!myProfile) {
-    throw new Error('Utente non autenticato — impossibile determinare dipartimento e sede')
-  }
+  // Priorità: sessione Turso → profilo MSAL mock
+  const session = loadSession()
+  let myEmployeeId: string
+  let myDepartment: string
+  let myLocation: string
 
-  const myEmployeeId = myProfile.employeeId
-  const myDepartment = myProfile.department
-  const myLocation = myProfile.locationCode
+  if (session) {
+    myEmployeeId = session.userId
+    myDepartment = session.department || 'IT'
+    myLocation = session.locationCode || 'MILANO'
+  } else {
+    const myProfile = getCurrentUserProfile()
+    if (!myProfile) {
+      throw new Error('Utente non autenticato — impossibile determinare dipartimento e sede')
+    }
+    myEmployeeId = myProfile.employeeId
+    myDepartment = myProfile.department
+    myLocation = myProfile.locationCode
+  }
 
   // Recupera TUTTE le pianificazioni della settimana
   const allPlans = await fetchTeamPlans(weekStart)

@@ -7,30 +7,82 @@
 //   - Sede (Treviso, Bologna, Milano)
 //   - Cambio email (richiede password attuale)
 //
-// I dati sono salvati in localStorage, mai committati.
+// Tutto salvato nel database Turso — persistente tra browser.
+// L'ID dipendente è fisso e unico (= userId Turso).
 // ──────────────────────────────────────────────
-import { useState, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { loadSettings, saveSettings, isConfigured, exportSettings, importSettings } from '../shared/settings.ts'
-import type { UserSettings } from '../shared/settings.ts'
 import { LOCATIONS } from './teamView.ts'
 import { loadSession, changeEmail } from '../shared/tursoAuth.ts'
+import { loadUserProfile, saveUserProfile } from '../shared/tursoSettings.ts'
+import type { UserProfile } from '../shared/tursoSettings.ts'
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState<UserSettings>(loadSettings)
-  const [saved, setSaved] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [importMsg, setImportMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const session = loadSession()
+
+  // ── Stato profilo ──
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [displayName, setDisplayName] = useState('')
+  const [locationCode, setLocationCode] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [saveMsg, setSaveMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [saving, setSaving] = useState(false)
   const [copied, setCopied] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // ── Cambio email ──
-  const session = loadSession()
   const [newEmail, setNewEmail] = useState('')
   const [currentPassword, setCurrentPassword] = useState('')
   const [emailMsg, setEmailMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [emailLoading, setEmailLoading] = useState(false)
 
+  // ── Carica profilo dal database al mount ──
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      if (!session) {
+        setLoading(false)
+        return
+      }
+      const p = await loadUserProfile()
+      if (cancelled) return
+      if (p) {
+        setProfile(p)
+        setDisplayName(p.displayName)
+        setLocationCode(p.locationCode)
+      }
+      setLoading(false)
+    }
+    load()
+    return () => { cancelled = true }
+  }, [])
+
+  // ── Salva profilo ──
+  const handleSave = async () => {
+    if (!displayName.trim()) {
+      setSaveMsg({ type: 'error', text: 'Inserisci il tuo nome' })
+      return
+    }
+    if (!locationCode) {
+      setSaveMsg({ type: 'error', text: 'Seleziona la tua sede' })
+      return
+    }
+
+    setSaving(true)
+    setSaveMsg(null)
+
+    const result = await saveUserProfile(displayName.trim(), locationCode)
+
+    setSaving(false)
+    if (result.success && result.profile) {
+      setProfile(result.profile)
+      setSaveMsg({ type: 'success', text: 'Impostazioni salvate nel database!' })
+    } else {
+      setSaveMsg({ type: 'error', text: result.error || 'Errore durante il salvataggio' })
+    }
+    setTimeout(() => setSaveMsg(null), 3000)
+  }
+
+  // ── Cambio email ──
   const handleChangeEmail = async () => {
     if (!session) {
       setEmailMsg({ type: 'error', text: 'Devi aver effettuato il login' })
@@ -55,82 +107,49 @@ export default function SettingsPage() {
       setEmailMsg({ type: 'success', text: 'Email aggiornata con successo!' })
       setNewEmail('')
       setCurrentPassword('')
+      // Ricarica il profilo per mostrare la nuova email
+      const p = await loadUserProfile()
+      if (p) {
+        setProfile(p)
+        setDisplayName(p.displayName)
+        setLocationCode(p.locationCode)
+      }
     } else {
       setEmailMsg({ type: 'error', text: result.error || 'Errore durante il cambio email' })
     }
   }
 
-  const configured = isConfigured()
-
-  const handleSave = () => {
-    // Validazione
-    if (!settings.displayName.trim()) {
-      setError('Inserisci il tuo nome')
-      return
-    }
-    if (!settings.location) {
-      setError('Seleziona la tua sede')
-      return
-    }
-
-    setError(null)
-    saveSettings(settings)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2500)
-  }
-
-  const handleReset = () => {
-    if (confirm('Cancellare tutte le impostazioni? Dovrai riconfigurare tutto.')) {
-      localStorage.removeItem('eos-user-settings')
-      setSettings(loadSettings())
-      setError(null)
-    }
-  }
-
-  // ── Esporta ──
-  const handleExport = () => {
-    const json = exportSettings()
-    const blob = new Blob([json], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'eos-settings-' + settings.employeeId + '.json'
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
-  // ── Importa ──
-  const handleImportClick = () => {
-    fileInputRef.current?.click()
-  }
-
-  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    const reader = new FileReader()
-    reader.onload = () => {
-      const text = reader.result as string
-      const ok = importSettings(text)
-      if (ok) {
-        setSettings(loadSettings())
-        setImportMsg({ type: 'success', text: 'Impostazioni importate con successo!' })
-      } else {
-        setImportMsg({ type: 'error', text: 'File JSON non valido' })
-      }
-      setTimeout(() => setImportMsg(null), 3000)
-    }
-    reader.readAsText(file)
-    // Reset input per permettere di ricaricare lo stesso file
-    e.target.value = ''
-  }
-
   // ── Copia ID ──
   const handleCopyId = () => {
-    navigator.clipboard.writeText(settings.employeeId).then(() => {
+    if (!profile) return
+    navigator.clipboard.writeText(profile.employeeId).then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     })
+  }
+
+  if (loading) {
+    return (
+      <div className="settings-page">
+        <div className="settings-card glass-card" style={{ textAlign: 'center', padding: '3rem' }}>
+          <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
+          <p>Caricamento impostazioni...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!session) {
+    return (
+      <div className="settings-page">
+        <div className="settings-card glass-card" style={{ textAlign: 'center', padding: '3rem' }}>
+          <p>Devi aver effettuato il login per vedere le impostazioni.</p>
+          <Link to="/" className="sw-nav-link" style={{ display: 'inline-block', marginTop: '1rem' }}>
+            ← Torna al login
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -141,18 +160,26 @@ export default function SettingsPage() {
           <div className="settings-icon">⚙️</div>
           <h1 className="settings-title">Impostazioni</h1>
           <p className="settings-subtitle">
-            Configura il tuo profilo per usare l'app con il team
+            Il tuo profilo è salvato nel database e condiviso tra tutti i dispositivi
           </p>
-          {configured && (
-            <span className="settings-status configured">✅ Configurato</span>
-          )}
-          {!configured && (
-            <span className="settings-status not-configured">⚠️ Da configurare</span>
-          )}
         </div>
 
         {/* Form */}
         <div className="settings-form">
+          {/* Email (sola lettura, cambiabile sotto) */}
+          <div className="settings-field">
+            <label className="settings-label">
+              📧 Email di login
+            </label>
+            <input
+              type="email"
+              value={profile?.email || session.email}
+              readOnly
+              className="settings-input readonly"
+            />
+            <span className="settings-hint">La tua email di accesso. Cambiala nella sezione sotto.</span>
+          </div>
+
           {/* Nome */}
           <div className="settings-field">
             <label className="settings-label" htmlFor="displayName">
@@ -161,8 +188,8 @@ export default function SettingsPage() {
             <input
               id="displayName"
               type="text"
-              value={settings.displayName}
-              onChange={e => setSettings(s => ({ ...s, displayName: e.target.value }))}
+              value={displayName}
+              onChange={e => setDisplayName(e.target.value)}
               placeholder="es. Ricardo Quintero"
               maxLength={50}
               className="settings-input"
@@ -177,8 +204,8 @@ export default function SettingsPage() {
             </label>
             <select
               id="location"
-              value={settings.location}
-              onChange={e => setSettings(s => ({ ...s, location: e.target.value as UserSettings['location'] }))}
+              value={locationCode}
+              onChange={e => setLocationCode(e.target.value)}
               className="settings-select"
             >
               <option value="">-- Seleziona sede --</option>
@@ -193,7 +220,7 @@ export default function SettingsPage() {
             </span>
           </div>
 
-          {/* Employee ID (copiabile) */}
+          {/* Employee ID (fisso = userId Turso) */}
           <div className="settings-field">
             <label className="settings-label">
               🆔 ID Dipendente
@@ -201,7 +228,7 @@ export default function SettingsPage() {
             <div className="settings-token-row">
               <input
                 type="text"
-                value={settings.employeeId}
+                value={profile?.employeeId || session.userId}
                 readOnly
                 className="settings-input readonly"
               />
@@ -215,126 +242,105 @@ export default function SettingsPage() {
               </button>
             </div>
             <span className="settings-hint">
-              Il tuo identificativo unico. Usalo per ritrovare le tue pianificazioni su altri browser.
+              Il tuo identificativo unico e permanente. Corrisponde al tuo ID su database.
             </span>
           </div>
 
-          {/* ── Cambio Email ── */}
-          {session && (
-            <div className="settings-section">
-              <h3 className="settings-section-title">📧 Cambia email</h3>
-              <p className="settings-section-desc">
-                Email attuale: <strong>{session.email}</strong>
-              </p>
-
-              <div className="settings-field">
-                <label className="settings-label" htmlFor="newEmail">
-                  Nuova email
-                </label>
-                <input
-                  id="newEmail"
-                  type="email"
-                  value={newEmail}
-                  onChange={e => setNewEmail(e.target.value)}
-                  placeholder="nuova@email.com"
-                  className="settings-input"
-                />
-              </div>
-
-              <div className="settings-field">
-                <label className="settings-label" htmlFor="currentPassword">
-                  🔒 Password attuale (per confermare)
-                </label>
-                <input
-                  id="currentPassword"
-                  type="password"
-                  value={currentPassword}
-                  onChange={e => setCurrentPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="settings-input"
-                />
-              </div>
-
-              {emailMsg && (
-                <div className={emailMsg.type === 'success' ? 'settings-success' : 'settings-error'}>
-                  {emailMsg.text}
-                </div>
-              )}
-
-              <button
-                onClick={handleChangeEmail}
-                disabled={emailLoading}
-                className="settings-save-btn"
-                style={{ marginTop: '0.5rem' }}
-              >
-                {emailLoading ? '⏳ Aggiornamento...' : '📧 Cambia email'}
-              </button>
-            </div>
-          )}
-
-          {/* Error */}
-          {error && (
-            <div className="settings-error">
-              ⚠️ {error}
-            </div>
-          )}
-
-          {/* Success */}
-          {saved && (
-            <div className="settings-success">
-              ✅ Impostazioni salvate!
-            </div>
-          )}
-
-          {/* Azioni */}
-          <div className="settings-actions">
-            <button onClick={handleSave} className="settings-save-btn">
-              💾 Salva impostazioni
-            </button>
-            <button onClick={handleReset} className="settings-reset-btn">
-              🗑️ Resetta
-            </button>
-          </div>
-
-          {/* Esporta / Importa */}
-          <div className="settings-actions">
-            <button onClick={handleExport} className="settings-export-btn">
-              📥 Esporta
-            </button>
-            <button onClick={handleImportClick} className="settings-import-btn">
-              📤 Importa
-            </button>
+          {/* Dipartimento (sola lettura) */}
+          <div className="settings-field">
+            <label className="settings-label">
+              🏢 Dipartimento
+            </label>
             <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json"
-              onChange={handleImportFile}
-              style={{ display: 'none' }}
+              type="text"
+              value={profile?.department || session.department || 'IT'}
+              readOnly
+              className="settings-input readonly"
             />
           </div>
-          {importMsg && (
-            <div className={importMsg.type === 'success' ? 'settings-success' : 'settings-error'}>
-              {importMsg.text}
+
+          {/* Messaggi salvataggio */}
+          {saveMsg && (
+            <div className={saveMsg.type === 'success' ? 'settings-success' : 'settings-error'}>
+              {saveMsg.text}
             </div>
           )}
+
+          {/* Salva */}
+          <div className="settings-actions">
+            <button onClick={handleSave} disabled={saving} className="settings-save-btn">
+              {saving ? '⏳ Salvataggio...' : '💾 Salva nel database'}
+            </button>
+          </div>
+
+          {/* ── Cambio Email ── */}
+          <div className="settings-section" style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-primary)' }}>
+            <h3 className="settings-section-title">📧 Cambia email</h3>
+            <p className="settings-section-desc">
+              Email attuale: <strong>{profile?.email || session.email}</strong>
+            </p>
+
+            <div className="settings-field">
+              <label className="settings-label" htmlFor="newEmail">
+                Nuova email
+              </label>
+              <input
+                id="newEmail"
+                type="email"
+                value={newEmail}
+                onChange={e => setNewEmail(e.target.value)}
+                placeholder="nuova@email.com"
+                className="settings-input"
+              />
+            </div>
+
+            <div className="settings-field">
+              <label className="settings-label" htmlFor="currentPassword">
+                🔒 Password attuale (per confermare)
+              </label>
+              <input
+                id="currentPassword"
+                type="password"
+                value={currentPassword}
+                onChange={e => setCurrentPassword(e.target.value)}
+                placeholder="••••••••"
+                className="settings-input"
+              />
+            </div>
+
+            {emailMsg && (
+              <div className={emailMsg.type === 'success' ? 'settings-success' : 'settings-error'}>
+                {emailMsg.text}
+              </div>
+            )}
+
+            <button
+              onClick={handleChangeEmail}
+              disabled={emailLoading}
+              className="settings-save-btn"
+              style={{ marginTop: '0.5rem' }}
+            >
+              {emailLoading ? '⏳ Aggiornamento...' : '📧 Cambia email'}
+            </button>
+          </div>
         </div>
 
         {/* Info */}
         <div className="settings-info">
           <h3 className="settings-info-title">ℹ️ Come funziona</h3>
           <ul className="settings-info-list">
-            <li>Registrati con la tua email nella pagina di login</li>
-            <li>I dati sono salvati su <strong>Turso</strong> (SQLite nel cloud)</li>
+            <li>Il tuo profilo è salvato su <strong>Turso</strong> (SQLite nel cloud)</li>
+            <li>L'ID dipendente è fisso e unico — lo stesso su ogni dispositivo</li>
             <li>Nome e sede determinano cosa vedi nella vista team</li>
-            <li>Tutto il team condivide lo stesso database</li>
+            <li>Per cambiare email serve la password attuale come verifica di sicurezza</li>
           </ul>
         </div>
       </div>
 
       {/* Link navigazione */}
       <div className="settings-footer-links">
-        <Link to="/smartworking" className="sw-nav-link">🏠 Pianifica SW</Link>
-        <Link to="/smartworking/team" className="sw-nav-link">👥 Vista Team</Link>
+        <Link to="/smartworking" className="sw-nav-link">📅 Pianifica</Link>
+        <Link to="/smartworking/team" className="sw-nav-link">👥 Team</Link>
         <Link to="/" className="sw-nav-link">📊 Dashboard</Link>
       </div>
     </div>

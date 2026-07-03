@@ -5,6 +5,7 @@ import { initPlanBackend } from './modules/shared/planBackend.ts'
 import { initializeAuth } from './modules/shared/msAuth.ts'
 import { useTheme } from './modules/shared/ThemeProvider.tsx'
 import { isLoggedIn, loadSession, clearSession, initTursoAuth } from './modules/shared/tursoAuth.ts'
+import { initTursoSettings } from './modules/shared/tursoSettings.ts'
 import type { AuthUser } from './modules/shared/tursoAuth.ts'
 import Dashboard from './Dashboard.tsx'
 import SmartWorkingApp from './modules/smartworking/SmartWorkingApp.tsx'
@@ -19,9 +20,11 @@ export default function App() {
   const [authChecked, setAuthChecked] = useState(false)
 
   useEffect(() => {
-    // Init Turso auth
+    // Init Turso auth + settings
     if (APP_CONFIG.features.tursoBackend) {
-      initTursoAuth({ url: APP_CONFIG.turso.url, token: APP_CONFIG.turso.token })
+      const tursoConfig = { url: APP_CONFIG.turso.url, token: APP_CONFIG.turso.token }
+      initTursoAuth(tursoConfig)
+      initTursoSettings(tursoConfig)
     }
 
     // Check existing session

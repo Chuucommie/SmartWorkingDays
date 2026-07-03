@@ -5,6 +5,8 @@ on:
     branches:
       - main # Esegue la action ogni volta che fai un push (o modifichi un file) su main
 
+workflow_dispatch:
+
 permissions:
   contents: write # Permette a GitHub di scrivere nel tuo branch gh-pages
 

@@ -123,7 +123,15 @@ async function executeSql(sql: string, args: unknown[] = []): Promise<Record<str
   const rows = result?.response?.result?.rows ?? []
   return rows.map(function(row: Array<unknown>) {
     const obj: Record<string, unknown> = {}
-    cols.forEach(function(col: { name: string }, i: number) { obj[col.name] = row[i] })
+    cols.forEach(function(col: { name: string }, i: number) {
+      const cell = row[i]
+      // Turso restituisce valori tipati: { type: 'text', value: '...' }
+      if (cell && typeof cell === 'object' && 'value' in cell) {
+        obj[col.name] = (cell as { value: unknown }).value
+      } else {
+        obj[col.name] = cell
+      }
+    })
     return obj
   })
 }

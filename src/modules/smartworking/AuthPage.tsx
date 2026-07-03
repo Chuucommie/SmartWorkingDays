@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { register, login, saveSession, initTursoAuth, requestPasswordReset, resetPassword, type AuthUser } from '../shared/tursoAuth.ts'
 import { APP_CONFIG } from '../shared/config.ts'
 import { LOCATIONS } from './teamView.ts'
+import { sendPasswordResetEmail } from '../shared/emailService.ts'
 
 interface AuthPageProps {
   onLogin: (user: AuthUser) => void
@@ -97,14 +98,16 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
     setSuccess(null)
     setLoading(true)
 
-    const token = ensureAuth()
-    if (!token) { setLoading(false); return }
+    const dbToken = ensureAuth()
+    if (!dbToken) { setLoading(false); return }
 
     try {
       const result = await requestPasswordReset(resetEmail)
-      if (result.success) {
-        setSuccess('Token di reset generato! Usalo qui sotto per reimpostare la password.')
-        setResetToken(result.token || '')
+      if (result.success && result.token) {
+        // Invia email con il token
+        await sendPasswordResetEmail(resetEmail, result.token)
+        setSuccess('Email inviata! Controlla la tua casella (o usa il token qui sotto).')
+        setResetToken(result.token)
         setMode('reset')
       } else {
         setError(result.error || 'Errore nella richiesta')
@@ -115,6 +118,20 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
       setLoading(false)
     }
   }
+
+  // ── Supporto link reset da URL ──
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const urlToken = params.get('reset')
+    const urlEmail = params.get('email')
+    if (urlToken && urlEmail) {
+      setResetEmail(urlEmail)
+      setResetToken(urlToken)
+      setMode('reset')
+      // Pulisci l'URL
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [])
 
   // ── Reimposta password ──
   const handleResetPassword = async (e: React.FormEvent) => {

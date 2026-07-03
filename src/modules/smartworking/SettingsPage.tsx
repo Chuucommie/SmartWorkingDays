@@ -1,11 +1,11 @@
 // ──────────────────────────────────────────────
-// EOS Timesheet — Pagina Impostazioni
+// EOS Smart Working — Pagina Impostazioni
 // ──────────────────────────────────────────────
 //
 // Permette a ogni membro del team di configurare:
-//   - Token GitHub (per leggere/scrivere plans.json)
 //   - Nome visualizzato
 //   - Sede (Treviso, Bologna, Milano)
+//   - Cambio email (richiede password attuale)
 //
 // I dati sono salvati in localStorage, mai committati.
 // ──────────────────────────────────────────────
@@ -14,6 +14,7 @@ import { Link } from 'react-router-dom'
 import { loadSettings, saveSettings, isConfigured, exportSettings, importSettings } from '../shared/settings.ts'
 import type { UserSettings } from '../shared/settings.ts'
 import { LOCATIONS } from './teamView.ts'
+import { loadSession, changeEmail } from '../shared/tursoAuth.ts'
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<UserSettings>(loadSettings)
@@ -22,6 +23,42 @@ export default function SettingsPage() {
   const [importMsg, setImportMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [copied, setCopied] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // ── Cambio email ──
+  const session = loadSession()
+  const [newEmail, setNewEmail] = useState('')
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [emailMsg, setEmailMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [emailLoading, setEmailLoading] = useState(false)
+
+  const handleChangeEmail = async () => {
+    if (!session) {
+      setEmailMsg({ type: 'error', text: 'Devi aver effettuato il login' })
+      return
+    }
+    if (!newEmail.trim() || !newEmail.includes('@')) {
+      setEmailMsg({ type: 'error', text: 'Inserisci un indirizzo email valido' })
+      return
+    }
+    if (!currentPassword) {
+      setEmailMsg({ type: 'error', text: 'Inserisci la password attuale per confermare' })
+      return
+    }
+
+    setEmailLoading(true)
+    setEmailMsg(null)
+
+    const result = await changeEmail(session.userId, newEmail.trim(), currentPassword)
+
+    setEmailLoading(false)
+    if (result.success) {
+      setEmailMsg({ type: 'success', text: 'Email aggiornata con successo!' })
+      setNewEmail('')
+      setCurrentPassword('')
+    } else {
+      setEmailMsg({ type: 'error', text: result.error || 'Errore durante il cambio email' })
+    }
+  }
 
   const configured = isConfigured()
 
@@ -181,6 +218,59 @@ export default function SettingsPage() {
               Il tuo identificativo unico. Usalo per ritrovare le tue pianificazioni su altri browser.
             </span>
           </div>
+
+          {/* ── Cambio Email ── */}
+          {session && (
+            <div className="settings-section">
+              <h3 className="settings-section-title">📧 Cambia email</h3>
+              <p className="settings-section-desc">
+                Email attuale: <strong>{session.email}</strong>
+              </p>
+
+              <div className="settings-field">
+                <label className="settings-label" htmlFor="newEmail">
+                  Nuova email
+                </label>
+                <input
+                  id="newEmail"
+                  type="email"
+                  value={newEmail}
+                  onChange={e => setNewEmail(e.target.value)}
+                  placeholder="nuova@email.com"
+                  className="settings-input"
+                />
+              </div>
+
+              <div className="settings-field">
+                <label className="settings-label" htmlFor="currentPassword">
+                  🔒 Password attuale (per confermare)
+                </label>
+                <input
+                  id="currentPassword"
+                  type="password"
+                  value={currentPassword}
+                  onChange={e => setCurrentPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="settings-input"
+                />
+              </div>
+
+              {emailMsg && (
+                <div className={emailMsg.type === 'success' ? 'settings-success' : 'settings-error'}>
+                  {emailMsg.text}
+                </div>
+              )}
+
+              <button
+                onClick={handleChangeEmail}
+                disabled={emailLoading}
+                className="settings-save-btn"
+                style={{ marginTop: '0.5rem' }}
+              >
+                {emailLoading ? '⏳ Aggiornamento...' : '📧 Cambia email'}
+              </button>
+            </div>
+          )}
 
           {/* Error */}
           {error && (

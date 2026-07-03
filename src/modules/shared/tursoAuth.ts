@@ -242,3 +242,66 @@ export async function resetPassword(email: string, token: string, newPassword: s
     return { success: false, error: msg }
   }
 }
+
+// ── Change Email ──
+
+export interface ChangeEmailResult {
+  success: boolean; error?: string
+}
+
+/**
+ * Cambia l'email di un utente. Richiede la password attuale per verifica.
+ * Aggiorna sia la tabella users che la sessione localStorage.
+ */
+export async function changeEmail(
+  userId: string,
+  newEmail: string,
+  currentPassword: string
+): Promise<ChangeEmailResult> {
+  try {
+    // 1. Recupera l'utente
+    const rows = await executeSql(
+      'SELECT id, email, password_hash FROM users WHERE id = ?',
+      [userId]
+    )
+    if (rows.length === 0) return { success: false, error: 'Utente non trovato' }
+
+    const row = rows[0]
+    const storedHash = row.password_hash as string
+    const parts = storedHash.split(':')
+    if (parts.length < 2) return { success: false, error: 'Dati utente corrotti' }
+
+    // 2. Verifica password attuale
+    const salt = parts[0]
+    const hash = parts[1]
+    const computedHash = await hashPassword(currentPassword, salt)
+    if (computedHash !== hash) return { success: false, error: 'Password attuale errata' }
+
+    const oldEmail = row.email as string
+
+    // 3. Controlla che la nuova email non sia già in uso
+    if (newEmail !== oldEmail) {
+      const existing = await executeSql('SELECT id FROM users WHERE email = ?', [newEmail])
+      if (existing.length > 0) return { success: false, error: 'Email già in uso da un altro account' }
+    }
+
+    // 4. Aggiorna email nel database
+    const now = new Date().toISOString()
+    await executeSql(
+      'UPDATE users SET email = ?, updated_at = ? WHERE id = ?',
+      [newEmail, now, userId]
+    )
+
+    // 5. Aggiorna la sessione localStorage
+    const session = loadSession()
+    if (session) {
+      session.email = newEmail
+      saveSession(session)
+    }
+
+    return { success: true }
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Unknown error'
+    return { success: false, error: msg }
+  }
+}

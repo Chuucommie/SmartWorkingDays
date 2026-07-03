@@ -299,26 +299,29 @@ export function formatLocalDate(d: Date): string {
 
 /**
  * Restituisce la data di inizio della settimana corrente (lunedì) in formato ISO.
+ * Immune al fuso orario: usa solo metodi locali (getFullYear/getMonth/getDate).
  */
 export function getCurrentWeekStart(): string {
   const now = new Date()
   const day = now.getDay()
-  const diff = day === 0 ? -6 : 1 - day
-  const monday = new Date(now)
-  monday.setDate(now.getDate() + diff)
-  monday.setHours(0, 0, 0, 0)
+  // Calcola il lunedì usando il costruttore Date(year, month, day)
+  // che gestisce correttamente i giorni negativi (es. 3 - 4 = -1 → giorno prima)
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((day + 6) % 7))
   return formatLocalDate(monday)
 }
 
 /**
  * Normalizza una data qualsiasi al lunedì della sua settimana.
- * Es: 2026-07-02 (giovedì) → 2026-06-30 (lunedì)
+ * Es: 2026-07-02 (giovedì) → 2026-06-29 (lunedì)
+ * Usa T12:00:00 (mezzogiorno) per evitare shift di fuso orario
+ * (T00:00:00 UTC può cadere nel giorno precedente in fusi negativi).
  */
 export function normalizeToMonday(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00')
+  // T12:00:00 = mezzogiorno UTC → nessun fuso orario può shiftare il giorno
+  const d = new Date(dateStr + 'T12:00:00')
   if (isNaN(d.getTime())) return dateStr
   const day = d.getDay()
-  const diff = day === 0 ? -6 : 1 - day
-  d.setDate(d.getDate() + diff)
-  return formatLocalDate(d)
+  // Costruttore Date(year, month, day) gestisce giorni negativi correttamente
+  const monday = new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((day + 6) % 7))
+  return formatLocalDate(monday)
 }

@@ -1,0 +1,6 @@
+name = "resend-proxy"
+main = "src/index.ts"
+compatibility_date = "2025-07-02"
+
+[observability]
+enabled = true

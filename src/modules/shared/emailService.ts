@@ -1,53 +1,29 @@
 // ──────────────────────────────────────────────
-// EOS Timesheet — Servizio invio email (Resend)
+// EOS Timesheet — Servizio invio email (Resend via Cloudflare Worker)
 // ──────────────────────────────────────────────
-// Usa l'API REST di Resend per inviare email direttamente
-// dal browser. Gratuito: 100 email/giorno, zero restrizioni dominio.
-// Configurazione: https://resend.com/
+// Invia email tramite un Cloudflare Worker che funge da proxy per Resend.
+// La API key di Resend è al sicuro lato server (Worker), mai esposta al browser.
+// Worker endpoint: https://resend-proxy.chuucommie.workers.dev/send-email
 // ──────────────────────────────────────────────
 
-export interface EmailConfig {
-  apiKey: string
-  fromEmail: string
-}
-
-let _emailConfig: EmailConfig | null = null
-
-export function initEmailService(config: EmailConfig): void {
-  _emailConfig = config
-}
-
-function getConfig(): EmailConfig {
-  if (!_emailConfig) throw new Error('Email service not initialized')
-  return _emailConfig
-}
+const WORKER_URL = 'https://resend-proxy.chuucommie.workers.dev/send-email'
 
 /**
- * Invia un'email di reset password usando l'API REST di Resend.
- * Nessuna restrizione di dominio — funziona da qualsiasi origine.
+ * Invia un'email di reset password tramite il Worker Cloudflare.
+ * Il Worker inoltra la richiesta a Resend con la API key server-side.
  */
 export async function sendPasswordResetEmail(
   toEmail: string,
   resetToken: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const cfg = getConfig()
-    if (!cfg.apiKey) {
-      console.info('[email] Resend non configurato. Token reset:', resetToken)
-      return { success: true }
-    }
-
     const resetLink = `${window.location.origin}${window.location.pathname}?reset=${encodeURIComponent(resetToken)}&email=${encodeURIComponent(toEmail)}`
 
-    const response = await fetch('https://api.resend.com/emails', {
+    const response = await fetch(WORKER_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${cfg.apiKey}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: cfg.fromEmail || 'EOS Smart Working <noreply@eosprod.com>',
-        to: [toEmail],
+        to: toEmail,
         subject: 'Reset password — EOS Smart Working',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
@@ -71,7 +47,7 @@ export async function sendPasswordResetEmail(
 
     if (!response.ok) {
       const text = await response.text()
-      console.error('[email] Resend API error:', response.status, text)
+      console.error('[email] Worker error:', response.status, text)
       return { success: true } // non blocchiamo il flusso
     }
 

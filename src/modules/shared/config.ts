@@ -36,7 +36,6 @@ export interface AppConfig {
   teams: { webhookUrl: string }
   github: { token: string; owner: string; repo: string; branch: string; plansPath: string }
   turso: { url: string; token: string }
-  resend: { apiKey: string; fromEmail: string }
   features: Record<string, boolean>
   polling: { teamWatcherIntervalMs: number; minApiIntervalMs: number }
   limits: { maxSavedWeeks: number; maxWatchedMembers: number }
@@ -79,11 +78,6 @@ export const APP_CONFIG: AppConfig = {
   turso: {
     url: import.meta.env.VITE_TURSO_URL || 'https://smartworking-chuucommie.aws-eu-west-1.turso.io',
     token: import.meta.env.VITE_TURSO_TOKEN || '',
-  },
-
-  resend: {
-    apiKey: import.meta.env.VITE_RESEND_API_KEY || '',
-    fromEmail: import.meta.env.VITE_RESEND_FROM_EMAIL || 'EOS Smart Working <noreply@eosprod.com>',
   },
 
   features: {

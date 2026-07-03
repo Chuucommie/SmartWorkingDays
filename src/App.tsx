@@ -6,7 +6,6 @@ import { initializeAuth } from './modules/shared/msAuth.ts'
 import { useTheme } from './modules/shared/ThemeProvider.tsx'
 import { isLoggedIn, loadSession, clearSession, initTursoAuth } from './modules/shared/tursoAuth.ts'
 import type { AuthUser } from './modules/shared/tursoAuth.ts'
-import { initEmailService } from './modules/shared/emailService.ts'
 import Dashboard from './Dashboard.tsx'
 import SmartWorkingApp from './modules/smartworking/SmartWorkingApp.tsx'
 import TeamViewPage from './modules/smartworking/TeamViewPage.tsx'
@@ -24,14 +23,6 @@ export default function App() {
     // Init Turso auth
     if (APP_CONFIG.features.tursoBackend) {
       initTursoAuth({ url: APP_CONFIG.turso.url, token: APP_CONFIG.turso.token })
-    }
-
-    // Init Resend email service
-    if (APP_CONFIG.resend.apiKey) {
-      initEmailService({
-        apiKey: APP_CONFIG.resend.apiKey,
-        fromEmail: APP_CONFIG.resend.fromEmail,
-      })
     }
 
     // Check existing session

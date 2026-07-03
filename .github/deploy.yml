@@ -1,0 +1,33 @@
+name: Build and Deploy to gh-pages
+
+on:
+  push:
+    branches:
+      - main # Esegue la action ogni volta che fai un push (o modifichi un file) su main
+
+permissions:
+  contents: write # Permette a GitHub di scrivere nel tuo branch gh-pages
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del codice 🛎️
+        uses: actions/checkout@v4
+
+      - name: Configura Node.js ⚙️
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Installa dipendenze e Builda 🔧
+        run: |
+          npm ci
+          npm run build
+
+      - name: Deploy su gh-pages 🚀
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages # Aggiorna il branch selezionato per le Pages
+          folder: dist # La cartella generata da Vite

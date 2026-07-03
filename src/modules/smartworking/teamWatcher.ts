@@ -287,6 +287,17 @@ export function diffWeeks(oldWeek: WeekPlan, newWeek: WeekPlan): DayChange[] {
 }
 
 /**
+ * Formatta una data in YYYY-MM-DD usando l'ora LOCALE (non UTC).
+ * toISOString() usa UTC e in Italia (UTC+2) sposta la data indietro di un giorno.
+ */
+export function formatLocalDate(d: Date): string {
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
+
+/**
  * Restituisce la data di inizio della settimana corrente (lunedì) in formato ISO.
  */
 export function getCurrentWeekStart(): string {
@@ -296,7 +307,7 @@ export function getCurrentWeekStart(): string {
   const monday = new Date(now)
   monday.setDate(now.getDate() + diff)
   monday.setHours(0, 0, 0, 0)
-  return monday.toISOString().split('T')[0]
+  return formatLocalDate(monday)
 }
 
 /**
@@ -309,5 +320,5 @@ export function normalizeToMonday(dateStr: string): string {
   const day = d.getDay()
   const diff = day === 0 ? -6 : 1 - day
   d.setDate(d.getDate() + diff)
-  return d.toISOString().split('T')[0]
+  return formatLocalDate(d)
 }

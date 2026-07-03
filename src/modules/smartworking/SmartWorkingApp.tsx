@@ -15,7 +15,7 @@ import type { SwRule } from '../shared/userProfile.ts'
 import { loadSession } from '../shared/tursoAuth.ts'
 import { save } from './savedWeeks.ts'
 import { savePlanning } from '../shared/planBackend.ts'
-import { getCurrentWeekStart, normalizeToMonday } from './teamWatcher.ts'
+import { getCurrentWeekStart, normalizeToMonday, formatLocalDate } from './teamWatcher.ts'
 import UserBadge from './UserBadge.tsx'
 
 const DAY_LABELS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven'] as const
@@ -207,7 +207,7 @@ export default function SmartWorkingApp() {
                 onClick={() => {
                   const d = new Date(weekStart + 'T00:00:00')
                   d.setDate(d.getDate() - 7)
-                  setWeekStart(d.toISOString().split('T')[0])
+                  setWeekStart(normalizeToMonday(formatLocalDate(d)))
                 }}
                 className="px-3 py-2 rounded-full text-sm font-medium border transition-colors"
                 style={{ background: 'var(--bg-input)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
@@ -223,7 +223,7 @@ export default function SmartWorkingApp() {
                 onClick={() => {
                   const d = new Date(weekStart + 'T00:00:00')
                   d.setDate(d.getDate() + 7)
-                  setWeekStart(d.toISOString().split('T')[0])
+                  setWeekStart(normalizeToMonday(formatLocalDate(d)))
                 }}
                 className="px-3 py-2 rounded-full text-sm font-medium border transition-colors"
                 style={{ background: 'var(--bg-input)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}

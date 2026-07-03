@@ -298,3 +298,16 @@ export function getCurrentWeekStart(): string {
   monday.setHours(0, 0, 0, 0)
   return monday.toISOString().split('T')[0]
 }
+
+/**
+ * Normalizza una data qualsiasi al lunedì della sua settimana.
+ * Es: 2026-07-02 (giovedì) → 2026-06-30 (lunedì)
+ */
+export function normalizeToMonday(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00')
+  if (isNaN(d.getTime())) return dateStr
+  const day = d.getDay()
+  const diff = day === 0 ? -6 : 1 - day
+  d.setDate(d.getDate() + diff)
+  return d.toISOString().split('T')[0]
+}

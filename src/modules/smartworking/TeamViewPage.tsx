@@ -12,7 +12,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { getTeamView, computeOfficeOverlaps, LOCATIONS } from './teamView.ts'
 import type { TeamViewResult, OfficeOverlaps } from './teamView.ts'
-import { createTeamWatcher, getCurrentWeekStart } from './teamWatcher.ts'
+import { createTeamWatcher, getCurrentWeekStart, normalizeToMonday } from './teamWatcher.ts'
 import type { TeamWatcher } from './teamWatcher.ts'
 
 const DAY_LABELS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven'] as const
@@ -71,7 +71,7 @@ export default function TeamViewPage() {
   const changeWeek = (direction: number) => {
     const d = new Date(weekStart + 'T00:00:00')
     d.setDate(d.getDate() + direction * 7)
-    setWeekStart(d.toISOString().split('T')[0])
+    setWeekStart(normalizeToMonday(d.toISOString().split('T')[0]))
   }
 
   // Toggle watch

@@ -15,7 +15,7 @@ import type { SwRule } from '../shared/userProfile.ts'
 import { loadSession } from '../shared/tursoAuth.ts'
 import { save } from './savedWeeks.ts'
 import { savePlanning } from '../shared/planBackend.ts'
-import { getCurrentWeekStart } from './teamWatcher.ts'
+import { getCurrentWeekStart, normalizeToMonday } from './teamWatcher.ts'
 import UserBadge from './UserBadge.tsx'
 
 const DAY_LABELS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven'] as const
@@ -148,7 +148,7 @@ export default function SmartWorkingApp() {
       employeeName: displayName,
       department: session?.department || 'IT',
       locationCode: sedeCode,
-      weekStart,
+      weekStart: normalizeToMonday(weekStart),
       week: perm.week,
       swDaysRequested: perm.totalSW,
     })
@@ -215,7 +215,7 @@ export default function SmartWorkingApp() {
               <input
                 type="date"
                 value={weekStart}
-                onChange={e => setWeekStart(e.target.value)}
+                onChange={e => setWeekStart(normalizeToMonday(e.target.value))}
                 className="flex-1 px-4 py-2.5 rounded-full text-sm font-medium border text-center"
                 style={{ background: 'var(--bg-input)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
               />

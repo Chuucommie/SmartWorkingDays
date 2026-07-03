@@ -1,15 +1,17 @@
 /**
- * Cloudflare Worker — Proxy per l'API Resend
+ * Cloudflare Worker — Proxy per l'API Brevo (ex Sendinblue)
  * 
- * Inoltra le richieste di invio email dal browser a Resend,
+ * Inoltra le richieste di invio email dal browser a Brevo,
  * tenendo la API key al sicuro lato server.
+ * 
+ * Brevo: 300 email/giorno gratis, verifica Gmail come mittente.
  * 
  * Endpoint: POST /send-email
  * Body: { to, subject, html }
  */
 
 export interface Env {
-	RESEND_API_KEY: string;
+	BREVO_API_KEY: string;
 }
 
 export default {
@@ -42,24 +44,27 @@ export default {
 				);
 			}
 
-			const resendResponse = await fetch('https://api.resend.com/emails', {
+			const brevoResponse = await fetch('https://api.brevo.com/v3/smtp/email', {
 				method: 'POST',
 				headers: {
-					'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+					'api-key': env.BREVO_API_KEY,
 					'Content-Type': 'application/json',
 				},
 				body: JSON.stringify({
-					from: 'SmartWorkingDays <onboarding@resend.dev>',
-					to: body.to,
+					sender: {
+						name: 'EOS Smart Working',
+						email: 'salazar.ricardo0509@gmail.com',
+					},
+					to: [{ email: body.to }],
 					subject: body.subject,
-					html: body.html,
+					htmlContent: body.html,
 				}),
 			});
 
-			const data = await resendResponse.json();
+			const data = await brevoResponse.json();
 
 			return new Response(JSON.stringify(data), {
-				status: resendResponse.status,
+				status: brevoResponse.status,
 				headers: {
 					'Content-Type': 'application/json',
 					'Access-Control-Allow-Origin': '*',

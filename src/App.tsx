@@ -11,7 +11,6 @@ import SmartWorkingApp from './modules/smartworking/SmartWorkingApp.tsx'
 import TeamViewPage from './modules/smartworking/TeamViewPage.tsx'
 import SavedWeeksPage from './modules/smartworking/SavedWeeksPage.tsx'
 import SettingsPage from './modules/smartworking/SettingsPage.tsx'
-import TimesheetApp from './modules/timesheet/TimesheetApp.tsx'
 import AuthPage from './modules/smartworking/AuthPage.tsx'
 
 export default function App() {
@@ -83,19 +82,17 @@ export default function App() {
       <nav className="global-nav">
         <div className="nav-inner">
           <NavLink to="/" end className="nav-brand">
-            ⏱️ EOS Timesheet
+            🏠 EOS Smart Working
           </NavLink>
           <div className="nav-links">
             {isFeatureEnabled('smartWorking') && (
               <NavLink to="/smartworking" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-                🏠 Smart Working
+                📅 Pianifica
               </NavLink>
             )}
-            {isFeatureEnabled('timesheet') && (
-              <NavLink to="/timesheet" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-                ⏱️ Timesheet
-              </NavLink>
-            )}
+            <NavLink to="/smartworking/team" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+              👥 Team
+            </NavLink>
             <NavLink to="/settings" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
               ⚙️
             </NavLink>
@@ -124,7 +121,6 @@ export default function App() {
           <Route path="/smartworking/team" element={<TeamViewPage />} />
           <Route path="/smartworking/saved" element={<SavedWeeksPage />} />
           <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/timesheet" element={<TimesheetApp />} />
         </Routes>
       </main>
     </div>

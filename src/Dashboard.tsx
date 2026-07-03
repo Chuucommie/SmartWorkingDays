@@ -1,5 +1,5 @@
 // ──────────────────────────────────────────────
-// EOS Timesheet — Dashboard
+// EOS Smart Working — Dashboard
 // ──────────────────────────────────────────────
 import { Link } from 'react-router-dom'
 import { isFeatureEnabled } from './modules/shared/config.ts'
@@ -14,33 +14,33 @@ interface ModuleCard {
 }
 
 /**
- * Dashboard principale di EOS Timesheet.
+ * Dashboard principale di EOS Smart Working.
  * Mostra card per ogni modulo disponibile.
  */
 export default function Dashboard() {
   const modules: ModuleCard[] = [
     {
-      title: 'Smart Working',
-      description: 'Pianifica i tuoi giorni di smart working, visualizza il team, ricevi notifiche sui cambiamenti.',
-      icon: '🏠',
+      title: 'Pianifica',
+      description: 'Configura i tuoi giorni di smart working e ufficio per la settimana.',
+      icon: '📅',
       path: '/smartworking',
       status: isFeatureEnabled('smartWorking') ? 'active' : 'coming-soon',
       color: '#34C759',
     },
     {
-      title: 'Timesheet',
-      description: 'Registra le ore lavorate direttamente su Business Central di EOS Prod.',
-      icon: '⏱️',
-      path: '/timesheet',
-      status: isFeatureEnabled('timesheet') ? 'active' : 'coming-soon',
+      title: 'Team',
+      description: 'Visualizza le pianificazioni del tuo team e le coincidenze in ufficio.',
+      icon: '👥',
+      path: '/smartworking/team',
+      status: 'active',
       color: '#007AFF',
     },
     {
-      title: 'Report',
-      description: 'Report mensili, statistiche dipartimentali, export Excel.',
-      icon: '📊',
-      path: '/reports',
-      status: 'coming-soon',
+      title: 'Template',
+      description: 'Gestisci le tue settimane salvate come template riutilizzabili.',
+      icon: '💾',
+      path: '/smartworking/saved',
+      status: 'active',
       color: '#FF9500',
     },
   ]
@@ -48,9 +48,9 @@ export default function Dashboard() {
   return (
     <div className="dashboard-page">
       <div className="dashboard-hero">
-        <h1 className="dashboard-title">EOS Timesheet</h1>
+        <h1 className="dashboard-title">EOS Smart Working</h1>
         <p className="dashboard-subtitle">
-          Gestione presenze, smart working e timesheet per EOS Prod
+          Pianificazione smart working per il team EOS Prod
         </p>
       </div>
 
@@ -81,7 +81,7 @@ export default function Dashboard() {
       </div>
 
       <footer className="dashboard-footer">
-        <p>EOS Timesheet v3 · IgelDev</p>
+        <p>EOS Smart Working · IgelDev</p>
       </footer>
     </div>
   )

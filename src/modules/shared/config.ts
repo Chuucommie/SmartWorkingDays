@@ -36,6 +36,7 @@ export interface AppConfig {
   teams: { webhookUrl: string }
   github: { token: string; owner: string; repo: string; branch: string; plansPath: string }
   turso: { url: string; token: string }
+  resend: { apiKey: string; fromEmail: string }
   features: Record<string, boolean>
   polling: { teamWatcherIntervalMs: number; minApiIntervalMs: number }
   limits: { maxSavedWeeks: number; maxWatchedMembers: number }
@@ -80,10 +81,9 @@ export const APP_CONFIG: AppConfig = {
     token: import.meta.env.VITE_TURSO_TOKEN || '',
   },
 
-  emailjs: {
-    publicKey: import.meta.env.VITE_EMAILJS_PUBLIC_KEY || '',
-    serviceId: import.meta.env.VITE_EMAILJS_SERVICE_ID || '',
-    templateId: import.meta.env.VITE_EMAILJS_TEMPLATE_ID || '',
+  resend: {
+    apiKey: import.meta.env.VITE_RESEND_API_KEY || '',
+    fromEmail: import.meta.env.VITE_RESEND_FROM_EMAIL || 'EOS Smart Working <noreply@eosprod.com>',
   },
 
   features: {

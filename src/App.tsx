@@ -26,12 +26,11 @@ export default function App() {
       initTursoAuth({ url: APP_CONFIG.turso.url, token: APP_CONFIG.turso.token })
     }
 
-    // Init EmailJS
-    if (APP_CONFIG.emailjs.publicKey) {
+    // Init Resend email service
+    if (APP_CONFIG.resend.apiKey) {
       initEmailService({
-        publicKey: APP_CONFIG.emailjs.publicKey,
-        serviceId: APP_CONFIG.emailjs.serviceId,
-        templateId: APP_CONFIG.emailjs.templateId,
+        apiKey: APP_CONFIG.resend.apiKey,
+        fromEmail: APP_CONFIG.resend.fromEmail,
       })
     }
 

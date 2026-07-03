@@ -117,35 +117,55 @@ export async function savePlanning(planning: {
   employeeId: string; employeeName: string; department: string; locationCode: string
   weekStart: string; week: WeekPlan; swDaysRequested: number
 }): Promise<SaveResult> {
+  let result: SaveResult
+
   if (APP_CONFIG.features.tursoBackend) {
     const { savePlanning: tursoSave } = await import('./tursoPlans.ts')
-    return tursoSave(planning)
-  }
-  if (APP_CONFIG.features.githubBackend) {
+    result = await tursoSave(planning)
+  } else if (APP_CONFIG.features.githubBackend) {
     const { savePlanning: ghSave } = await import('./githubPlans.ts')
-    return ghSave(planning)
-  }
-  if (APP_CONFIG.features.bcIntegration) {
-    return BcBackend.savePlanning(planning)
-  }
-  try {
-    const plans = loadLocalPlans()
-    const now = new Date().toISOString()
-    const existingIdx = plans.findIndex(
-      p => p.employeeId === planning.employeeId && p.weekStart === planning.weekStart
-    )
-    const stored: StoredPlan = {
-      employeeId: planning.employeeId, employeeName: planning.employeeName,
-      department: planning.department, locationCode: planning.locationCode,
-      weekStart: planning.weekStart, week: planning.week,
-      swDaysRequested: planning.swDaysRequested, updatedAt: now,
+    result = await ghSave(planning)
+  } else if (APP_CONFIG.features.bcIntegration) {
+    result = await BcBackend.savePlanning(planning)
+  } else {
+    try {
+      const plans = loadLocalPlans()
+      const now = new Date().toISOString()
+      const existingIdx = plans.findIndex(
+        p => p.employeeId === planning.employeeId && p.weekStart === planning.weekStart
+      )
+      const stored: StoredPlan = {
+        employeeId: planning.employeeId, employeeName: planning.employeeName,
+        department: planning.department, locationCode: planning.locationCode,
+        weekStart: planning.weekStart, week: planning.week,
+        swDaysRequested: planning.swDaysRequested, updatedAt: now,
+      }
+      if (existingIdx >= 0) plans[existingIdx] = stored
+      else plans.push(stored)
+      saveLocalPlans(plans)
+      result = { success: true, entryId: planning.employeeId + '-' + planning.weekStart }
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Errore sconosciuto'
+      result = { success: false, error: msg }
     }
-    if (existingIdx >= 0) plans[existingIdx] = stored
-    else plans.push(stored)
-    saveLocalPlans(plans)
-    return { success: true, entryId: planning.employeeId + '-' + planning.weekStart }
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Errore sconosciuto'
-    return { success: false, error: msg }
   }
+
+  // ── Notifica coincidenze ufficio (solo se il salvataggio è riuscito) ──
+  if (result.success && APP_CONFIG.features.tursoBackend) {
+    // Esegue in background, non blocca l'utente
+    import('./tursoPlans.ts').then(({ checkAndNotifyOfficeOverlaps }) => {
+      checkAndNotifyOfficeOverlaps(
+        planning.employeeId,
+        planning.employeeName,
+        planning.weekStart,
+        planning.week,
+        planning.department,
+        planning.locationCode
+      ).catch(() => {
+        // Silenzia errori di notifica — non devono bloccare l'utente
+      })
+    }).catch(() => {})
+  }
+
+  return result
 }

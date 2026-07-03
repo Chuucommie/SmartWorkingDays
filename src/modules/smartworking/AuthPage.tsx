@@ -15,7 +15,7 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
-  const [department, setDepartment] = useState('IT')
+  const [department, setDepartment] = useState('LABS')
   const [location, setLocation] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -253,12 +253,13 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
                   <label htmlFor="department">🏢 Dipartimento</label>
                   <input
                     id="department"
-                    type="text"
+                    type="hidden"
                     value={department}
-                    onChange={e => setDepartment(e.target.value)}
-                    placeholder="IT"
-                    className="auth-input"
+                    readOnly
                   />
+                  <div className="auth-info-text" style={{ padding: '0.5rem 0' }}>
+                    Dipartimento: <strong>LABS</strong>
+                  </div>
                 </div>
 
                 <div className="auth-field">

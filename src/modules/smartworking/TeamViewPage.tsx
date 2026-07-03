@@ -203,30 +203,101 @@ export default function TeamViewPage() {
         </div>
       )}
 
-      {/* Riepilogo coincidenze */}
-      {teamData && !loading && Object.keys(overlaps).length > 0 && (
-        <div className="overlap-summary">
-          <h3 className="overlap-title">🤝 Coincidi in ufficio con:</h3>
-          <div className="overlap-grid">
-            {DAY_LABELS.map((label, i) => {
-              const names = overlaps[i]
-              if (!names) return null
-              return (
-                <div key={i} className="overlap-item">
-                  <span className="overlap-day">{label}</span>
-                  <span className="overlap-names">{names.join(', ')}</span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
+      {/* Riepilogo coincidenze — SEZIONE EVIDENZIATA */}
+      {teamData && !loading && teamData.myPlan && (
+        <OfficeOverlapSection
+          myPlan={teamData.myPlan}
+          colleagues={teamData.colleagues}
+          overlaps={overlaps}
+        />
       )}
 
       {/* Link navigazione */}
       <div className="team-footer-links">
-        <Link to="/smartworking" className="sw-nav-link">🏠 Pianifica SW</Link>
+        <Link to="/smartworking" className="sw-nav-link">📅 Pianifica</Link>
         <Link to="/smartworking/saved" className="sw-nav-link">💾 Combinazioni salvate</Link>
         <Link to="/" className="sw-nav-link">📊 Dashboard</Link>
+      </div>
+    </div>
+  )
+}
+
+// ──────────────────────────────────────────────
+// Componente: Sezione Coincidenze Ufficio
+// ──────────────────────────────────────────────
+
+interface OfficeOverlapSectionProps {
+  myPlan: { week: string[]; employeeName: string }
+  colleagues: Array<{ week: string[]; employeeName: string; employeeId: string }>
+  overlaps: OfficeOverlaps
+}
+
+function OfficeOverlapSection({ myPlan, colleagues, overlaps }: OfficeOverlapSectionProps) {
+  const hasAnyOverlap = Object.keys(overlaps).length > 0
+  const officeDays = myPlan.week.map((s, i) => ({ day: i, state: s })).filter(d => d.state === 'office')
+
+  if (officeDays.length === 0) {
+    return (
+      <div className="overlap-summary" style={{ background: 'var(--bg-card)', borderRadius: '16px', padding: '1.5rem', marginTop: '1rem' }}>
+        <h3 className="overlap-title">🏢 Coincidenze in ufficio</h3>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+          Non hai giorni in ufficio questa settimana. Nessuna coincidenza da mostrare.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="overlap-summary" style={{
+      background: 'var(--bg-card)',
+      borderRadius: '16px',
+      padding: '1.5rem',
+      marginTop: '1rem',
+      border: hasAnyOverlap ? '2px solid var(--accent-blue)' : '1px solid var(--border-primary)',
+    }}>
+      <h3 className="overlap-title" style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem' }}>
+        🏢 Chi è in ufficio con te
+      </h3>
+
+      {/* Tabella per ogni giorno in ufficio */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        {DAY_LABELS.map((label, i) => {
+          if (myPlan.week[i] !== 'office') return null
+
+          const colleaguesInOffice = colleagues.filter(c => c.week && c.week[i] === 'office')
+
+          return (
+            <div key={i} style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              padding: '0.75rem 1rem',
+              borderRadius: '12px',
+              background: colleaguesInOffice.length > 0 ? 'rgba(0, 122, 255, 0.08)' : 'var(--bg-hover)',
+            }}>
+              <div style={{ flexShrink: 0, width: '3rem', textAlign: 'center' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>{label}</div>
+                <div style={{ fontSize: '1.25rem' }}>🏢</div>
+              </div>
+              <div style={{ flex: 1 }}>
+                {colleaguesInOffice.length > 0 ? (
+                  <>
+                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--accent-blue)' }}>
+                      👥 {colleaguesInOffice.length} {colleaguesInOffice.length === 1 ? 'collega' : 'colleghi'} in ufficio
+                    </div>
+                    <div style={{ fontSize: '0.8125rem', color: 'var(--text-primary)', marginTop: '0.25rem' }}>
+                      {colleaguesInOffice.map(c => c.employeeName).join(', ')}
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                    🏠 Solo tu in ufficio
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )

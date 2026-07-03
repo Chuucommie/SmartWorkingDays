@@ -1,8 +1,7 @@
 // ──────────────────────────────────────────────
 // SmartWorkingDays — Pagina principale
 // ──────────────────────────────────────────────
-// Dropdown regola SW in alto, bottone Rilascia,
-// bridge verso Timesheet con Location Code.
+// Configura i vincoli e invia la settimana al team.
 // ──────────────────────────────────────────────
 
 import { useState, useEffect, useMemo } from 'react'
@@ -14,7 +13,7 @@ import { computeTarget, describeSwRule } from '../shared/userProfile.ts'
 import type { SwRule } from '../shared/userProfile.ts'
 import { loadSession } from '../shared/tursoAuth.ts'
 import { save } from './savedWeeks.ts'
-import { savePlanning } from '../shared/planBackend.ts'
+import { savePlanning, fetchEmployeePlan } from '../shared/planBackend.ts'
 import { getCurrentWeekStart, normalizeToMonday, formatLocalDate } from './teamWatcher.ts'
 import UserBadge from './UserBadge.tsx'
 
@@ -69,9 +68,15 @@ export default function SmartWorkingApp() {
   const [saving, setSaving] = useState(false)
   const [saveMsg, setSaveMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
-  // ── Pubblicazione ──
+  // ── Pubblicazione/Invio ──
   const [publishing, setPublishing] = useState(false)
   const [publishMsg, setPublishMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  // ── Piano esistente (già inviato) ──
+  const [existingPlan, setExistingPlan] = useState<{ week: WeekPlan; swDays: number } | null>(null)
+  const [planLoading, setPlanLoading] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteMsg, setDeleteMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   // ── Selettore settimana ──
   const [weekStart, setWeekStart] = useState(getCurrentWeekStart())
@@ -154,7 +159,7 @@ export default function SmartWorkingApp() {
     const result = await savePlanning({
       employeeId: resourceNo,
       employeeName: displayName,
-      department: session?.department || 'IT',
+      department: 'LABS',
       locationCode: sedeCode,
       weekStart: normalizeToMonday(weekStart),
       week: perm.week,
@@ -163,11 +168,72 @@ export default function SmartWorkingApp() {
 
     setPublishing(false)
     if (result.success) {
-      setPublishMsg({ type: 'success', text: `Pianificazione pubblicata per la settimana del ${weekStart}! Il team può vederla.` })
+      setPublishMsg({ type: 'success', text: `Pianificazione inviata per la settimana del ${formatWeekRange(weekStart)}! Il team può vederla.` })
+      // Aggiorna existingPlan
+      setExistingPlan({ week: perm.week, swDays: perm.totalSW })
     } else {
-      setPublishMsg({ type: 'error', text: result.error || 'Errore durante la pubblicazione' })
+      setPublishMsg({ type: 'error', text: result.error || 'Errore durante l\'invio' })
     }
     setTimeout(() => setPublishMsg(null), 5000)
+  }
+
+  // ── Carica piano esistente dal backend ──
+  useEffect(() => {
+    async function loadExisting() {
+      if (!resourceNo) return
+      setPlanLoading(true)
+      try {
+        const plan = await fetchEmployeePlan(resourceNo, normalizeToMonday(weekStart))
+        if (plan) {
+          setExistingPlan({ week: plan.week, swDays: plan.swDaysRequested })
+          setDayStates(plan.week)
+        } else {
+          setExistingPlan(null)
+        }
+      } catch {
+        setExistingPlan(null)
+      } finally {
+        setPlanLoading(false)
+      }
+    }
+    loadExisting()
+  }, [weekStart, resourceNo])
+
+  // ── Cancella piano ──
+  const handleDelete = async () => {
+    if (!existingPlan) return
+    if (!confirm('Cancellare la tua pianificazione per questa settimana? Il team non la vedrà più.')) return
+
+    setDeleting(true)
+    setDeleteMsg(null)
+
+    try {
+      // Salva un piano vuoto (tutti free) per sovrascrivere
+      const emptyWeek: WeekPlan = ['free', 'free', 'free', 'free', 'free']
+      const result = await savePlanning({
+        employeeId: resourceNo,
+        employeeName: displayName,
+        department: 'LABS',
+        locationCode: sedeCode,
+        weekStart: normalizeToMonday(weekStart),
+        week: emptyWeek,
+        swDaysRequested: 0,
+      })
+
+      if (result.success) {
+        setExistingPlan(null)
+        setDayStates(emptyWeek)
+        setSelectedPerm(null)
+        setDeleteMsg({ type: 'success', text: 'Pianificazione cancellata!' })
+      } else {
+        setDeleteMsg({ type: 'error', text: result.error || 'Errore durante la cancellazione' })
+      }
+    } catch (err) {
+      setDeleteMsg({ type: 'error', text: 'Errore di connessione' })
+    } finally {
+      setDeleting(false)
+      setTimeout(() => setDeleteMsg(null), 4000)
+    }
   }
 
   return (
@@ -330,13 +396,57 @@ export default function SmartWorkingApp() {
             <div className="text-center py-4"><p className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>{dayStates.filter(s => s === 'sw').length > targetSW ? '⚠️ Troppi giorni fissati in Smart Working' : dayStates.filter(s => s === 'office').length > targetOffice ? '⚠️ Troppi giorni fissati in Ufficio' : 'Nessuna combinazione possibile'}</p></div>
           )}
 
-          {/* ── Azioni: Salva + Rilascia ── */}
-          {selectedPerm !== null && permutations[selectedPerm]?.valid && (
+          {/* ── Piano esistente o Azioni ── */}
+          {/* Piano già inviato: mostra stato + modifica/cancella */}
+          {planLoading && (
+            <div className="mt-4 pt-4 border-t text-center" style={{ borderColor: 'var(--border-secondary)' }}>
+              <p className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>⏳ Caricamento piano esistente...</p>
+            </div>
+          )}
+
+          {existingPlan && !planLoading && (
+            <div className="mt-4 pt-4 border-t space-y-3" style={{ borderColor: 'var(--border-secondary)' }}>
+              <div className="text-center p-3 rounded-xl" style={{ background: 'var(--bg-hover)' }}>
+                <p className="text-[13px] font-medium" style={{ color: 'var(--text-green)' }}>✅ Piano già inviato per questa settimana</p>
+                <div className="flex justify-center gap-1.5 mt-2">
+                  {existingPlan.week.map((state, i) => (
+                    <span key={i} className={`mini-pill ${state}`}>{STATES[state].icon} {DAY_LABELS[i]}</span>
+                  ))}
+                </div>
+              </div>
+              {deleteMsg && <p className="text-center text-xs" style={{ color: deleteMsg.type === 'success' ? 'var(--text-green)' : 'var(--text-red)' }}>{deleteMsg.text}</p>}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    // Ricarica il piano nei day states per modificarlo
+                    setDayStates(existingPlan.week)
+                    setSelectedPerm(null)
+                    setExistingPlan(null) // esce dalla modalità "già inviato"
+                  }}
+                  className="flex-1 py-2.5 rounded-full text-sm font-semibold transition-all"
+                  style={{ background: 'var(--accent-blue)', color: 'white', boxShadow: '0 2px 12px rgba(0,122,255,0.2)' }}
+                >
+                  ✏️ Modifica
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="flex-1 py-2.5 rounded-full text-sm font-semibold transition-all disabled:opacity-50"
+                  style={{ background: 'var(--text-red)', color: 'white' }}
+                >
+                  {deleting ? '⏳...' : '🗑️ Cancella'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Nuovo invio: salva + invia */}
+          {!existingPlan && !planLoading && selectedPerm !== null && permutations[selectedPerm]?.valid && (
             <div className="mt-4 pt-4 border-t space-y-3" style={{ borderColor: 'var(--border-secondary)' }}>
               {/* Salva */}
               {!saving ? (
                 <button onClick={() => setSaving(true)} className="w-full py-2.5 rounded-full text-sm font-semibold transition-all"
-                  style={{ background: 'var(--accent-green)', color: 'white', boxShadow: '0 2px 12px rgba(52,199,89,0.3)' }}>💾 Salva questa combinazione</button>
+                  style={{ background: 'var(--accent-green)', color: 'white', boxShadow: '0 2px 12px rgba(52,199,89,0.3)' }}>💾 Salva combinazione</button>
               ) : (
                 <div className="flex gap-2">
                   <input type="text" value={saveName} onChange={e => setSaveName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') { setSaving(false); setSaveName('') } }} placeholder="Nome combinazione..." maxLength={50} autoFocus
@@ -347,14 +457,14 @@ export default function SmartWorkingApp() {
               )}
               {saveMsg && <p className="text-center text-xs" style={{ color: saveMsg.type === 'success' ? 'var(--text-green)' : 'var(--text-red)' }}>{saveMsg.text}</p>}
 
-              {/* Pubblica */}
+              {/* Invia */}
               <button
                 onClick={handlePublish}
                 disabled={publishing}
                 className="w-full py-2.5 rounded-full text-sm font-semibold text-white transition-all disabled:opacity-50"
                 style={{ background: 'var(--accent-blue)', boxShadow: '0 2px 12px rgba(0,122,255,0.3)' }}
               >
-                {publishing ? '⏳ Pubblicazione...' : '📤 Pubblica pianificazione'}
+                {publishing ? '⏳ Invio in corso...' : '📤 Invia pianificazione'}
               </button>
               {publishMsg && (
                 <p className="text-center text-xs mt-1" style={{ color: publishMsg.type === 'success' ? 'var(--text-green)' : 'var(--text-red)' }}>
@@ -371,10 +481,9 @@ export default function SmartWorkingApp() {
           <div className="flex justify-center gap-4 flex-wrap">
             <Link to="/smartworking/team" className="sw-nav-link">👥 Vedi team</Link>
             <Link to="/smartworking/saved" className="sw-nav-link">💾 Combinazioni salvate</Link>
-            <Link to="/timesheet" className="sw-nav-link">⏱️ Timesheet</Link>
             <Link to="/" className="sw-nav-link">📊 Dashboard</Link>
           </div>
-          <p className="text-center text-[11px] opacity-50" style={{ color: 'var(--text-secondary)' }}>SmartWorkingDays v3 · IgelDev</p>
+          <p className="text-center text-[11px] opacity-50" style={{ color: 'var(--text-secondary)' }}>SmartWorkingDays · IgelDev</p>
         </div>
       </div>
     </div>

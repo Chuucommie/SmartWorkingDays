@@ -76,6 +76,14 @@ export default function SmartWorkingApp() {
   // ── Selettore settimana ──
   const [weekStart, setWeekStart] = useState(getCurrentWeekStart())
 
+  // Formatta range settimana (es. "29 giu – 3 lug 2026")
+  const formatWeekRange = (start: string) => {
+    const d = new Date(start + 'T12:00:00')
+    const end = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 4)
+    const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' }
+    return `${d.toLocaleDateString('it-IT', opts)} – ${end.toLocaleDateString('it-IT', opts)}`
+  }
+
   const session = loadSession()
   const displayName = session?.name ?? 'Utente'
   const resourceNo = session?.userId || 'EMP001'
@@ -205,29 +213,26 @@ export default function SmartWorkingApp() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => {
-                  const d = new Date(weekStart + 'T00:00:00')
-                  d.setDate(d.getDate() - 7)
-                  setWeekStart(normalizeToMonday(formatLocalDate(d)))
+                  const d = new Date(weekStart + 'T12:00:00')
+                  const prev = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 7)
+                  setWeekStart(formatLocalDate(prev))
                 }}
                 className="px-3 py-2 rounded-full text-sm font-medium border transition-colors"
                 style={{ background: 'var(--bg-input)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
-              >←</button>
-              <input
-                type="date"
-                value={weekStart}
-                onChange={e => setWeekStart(normalizeToMonday(e.target.value))}
-                className="flex-1 px-4 py-2.5 rounded-full text-sm font-medium border text-center"
-                style={{ background: 'var(--bg-input)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
-              />
+              >◀</button>
+              <span className="flex-1 px-4 py-2.5 rounded-full text-sm font-medium border text-center"
+                style={{ background: 'var(--bg-input)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}>
+                {formatWeekRange(weekStart)}
+              </span>
               <button
                 onClick={() => {
-                  const d = new Date(weekStart + 'T00:00:00')
-                  d.setDate(d.getDate() + 7)
-                  setWeekStart(normalizeToMonday(formatLocalDate(d)))
+                  const d = new Date(weekStart + 'T12:00:00')
+                  const next = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 7)
+                  setWeekStart(formatLocalDate(next))
                 }}
                 className="px-3 py-2 rounded-full text-sm font-medium border transition-colors"
                 style={{ background: 'var(--bg-input)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
-              >→</button>
+              >▶</button>
               <button
                 onClick={() => setWeekStart(getCurrentWeekStart())}
                 className="px-3 py-2 rounded-full text-xs font-medium border transition-colors"

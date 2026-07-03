@@ -12,7 +12,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { getTeamView, computeOfficeOverlaps, LOCATIONS } from './teamView.ts'
 import type { TeamViewResult, OfficeOverlaps } from './teamView.ts'
-import { createTeamWatcher, getCurrentWeekStart, normalizeToMonday, formatLocalDate } from './teamWatcher.ts'
+import { createTeamWatcher, getCurrentWeekStart, formatLocalDate } from './teamWatcher.ts'
 import type { TeamWatcher } from './teamWatcher.ts'
 
 const DAY_LABELS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven'] as const
@@ -69,9 +69,9 @@ export default function TeamViewPage() {
 
   // Naviga settimana
   const changeWeek = (direction: number) => {
-    const d = new Date(weekStart + 'T00:00:00')
-    d.setDate(d.getDate() + direction * 7)
-    setWeekStart(normalizeToMonday(formatLocalDate(d)))
+    const d = new Date(weekStart + 'T12:00:00')
+    const target = new Date(d.getFullYear(), d.getMonth(), d.getDate() + direction * 7)
+    setWeekStart(formatLocalDate(target))
   }
 
   // Toggle watch
@@ -87,9 +87,8 @@ export default function TeamViewPage() {
 
   // Formatta data
   const formatWeekRange = (start: string) => {
-    const d = new Date(start + 'T00:00:00')
-    const end = new Date(d)
-    end.setDate(end.getDate() + 4)
+    const d = new Date(start + 'T12:00:00')
+    const end = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 4)
     const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' }
     return `${d.toLocaleDateString('it-IT', opts)} – ${end.toLocaleDateString('it-IT', opts)}`
   }
@@ -113,19 +112,12 @@ export default function TeamViewPage() {
       <div className="team-controls">
         <div className="week-nav">
           <button onClick={() => changeWeek(-1)} className="ctrl-btn" title="Settimana precedente">
-            ←
+            ◀
           </button>
           <span className="week-label">{formatWeekRange(weekStart)}</span>
           <button onClick={() => changeWeek(1)} className="ctrl-btn" title="Settimana successiva">
-            →
+            ▶
           </button>
-          <input
-            type="date"
-            value={weekStart}
-            onChange={e => setWeekStart(normalizeToMonday(e.target.value))}
-            className="week-date-input"
-            title="Vai a una settimana specifica"
-          />
           <button onClick={() => setWeekStart(getCurrentWeekStart())} className="ctrl-btn" title="Vai a questa settimana">
             📅 Oggi
           </button>

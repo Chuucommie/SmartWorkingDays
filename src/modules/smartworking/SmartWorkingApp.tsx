@@ -73,6 +73,9 @@ export default function SmartWorkingApp() {
   const [publishing, setPublishing] = useState(false)
   const [publishMsg, setPublishMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
+  // ── Selettore settimana ──
+  const [weekStart, setWeekStart] = useState(getCurrentWeekStart())
+
   const session = loadSession()
   const displayName = session?.name ?? 'Utente'
   const resourceNo = session?.userId || 'EMP001'
@@ -140,11 +143,10 @@ export default function SmartWorkingApp() {
     setPublishing(true)
     setPublishMsg(null)
 
-    const weekStart = getCurrentWeekStart()
     const result = await savePlanning({
       employeeId: resourceNo,
       employeeName: displayName,
-      department: userProfile?.department || 'IT',
+      department: session?.department || 'IT',
       locationCode: sedeCode,
       weekStart,
       week: perm.week,
@@ -195,6 +197,44 @@ export default function SmartWorkingApp() {
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
+          </div>
+
+          {/* ── Selettore Settimana ── */}
+          <div className="mb-5">
+            <label className="text-[12px] font-medium uppercase tracking-[0.5px] mb-2 block" style={{ color: 'var(--text-secondary)' }}>Settimana di pianificazione</label>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  const d = new Date(weekStart + 'T00:00:00')
+                  d.setDate(d.getDate() - 7)
+                  setWeekStart(d.toISOString().split('T')[0])
+                }}
+                className="px-3 py-2 rounded-full text-sm font-medium border transition-colors"
+                style={{ background: 'var(--bg-input)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
+              >←</button>
+              <input
+                type="date"
+                value={weekStart}
+                onChange={e => setWeekStart(e.target.value)}
+                className="flex-1 px-4 py-2.5 rounded-full text-sm font-medium border text-center"
+                style={{ background: 'var(--bg-input)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
+              />
+              <button
+                onClick={() => {
+                  const d = new Date(weekStart + 'T00:00:00')
+                  d.setDate(d.getDate() + 7)
+                  setWeekStart(d.toISOString().split('T')[0])
+                }}
+                className="px-3 py-2 rounded-full text-sm font-medium border transition-colors"
+                style={{ background: 'var(--bg-input)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
+              >→</button>
+              <button
+                onClick={() => setWeekStart(getCurrentWeekStart())}
+                className="px-3 py-2 rounded-full text-xs font-medium border transition-colors"
+                style={{ background: 'var(--bg-input)', borderColor: 'var(--border-primary)', color: 'var(--text-secondary)' }}
+                title="Vai a questa settimana"
+              >📅</button>
+            </div>
           </div>
 
           {/* ── Selettore Giorni ── */}

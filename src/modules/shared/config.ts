@@ -76,7 +76,7 @@ export const APP_CONFIG: AppConfig = {
   },
 
   turso: {
-    url: import.meta.env.VITE_TURSO_URL || 'libsql://smartworking-chuucommie.aws-eu-west-1.turso.io',
+    url: import.meta.env.VITE_TURSO_URL || 'https://smartworking-chuucommie.aws-eu-west-1.turso.io',
     token: import.meta.env.VITE_TURSO_TOKEN || '',
   },
 

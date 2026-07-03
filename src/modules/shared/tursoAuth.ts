@@ -178,3 +178,59 @@ export async function login(email: string, password: string): Promise<AuthResult
     return { success: false, error: msg }
   }
 }
+
+// ── Password Reset ──
+
+function generateResetToken(): string {
+  const arr = new Uint8Array(16)
+  crypto.getRandomValues(arr)
+  return Array.from(arr, function(b) { return b.toString(16).padStart(2, '0') }).join('')
+}
+
+export interface ResetResult {
+  success: boolean; token?: string; error?: string
+}
+
+export async function requestPasswordReset(email: string): Promise<ResetResult> {
+  try {
+    const rows = await executeSql('SELECT id FROM users WHERE email = ?', [email])
+    if (rows.length === 0) return { success: false, error: 'Email non trovata' }
+    const token = generateResetToken()
+    const expires = new Date(Date.now() + 3600_000).toISOString() // 1 ora
+    await executeSql(
+      'INSERT OR REPLACE INTO password_resets (email, token, expires_at, created_at) VALUES (?, ?, ?, ?)',
+      [email, token, expires, new Date().toISOString()]
+    )
+    return { success: true, token }
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Unknown error'
+    return { success: false, error: msg }
+  }
+}
+
+export async function resetPassword(email: string, token: string, newPassword: string): Promise<AuthResult> {
+  try {
+    const rows = await executeSql(
+      'SELECT token, expires_at FROM password_resets WHERE email = ? AND token = ?',
+      [email, token]
+    )
+    if (rows.length === 0) return { success: false, error: 'Token non valido' }
+    const row = rows[0]
+    const expires = new Date(row.expires_at as string)
+    if (expires < new Date()) {
+      await executeSql('DELETE FROM password_resets WHERE email = ?', [email])
+      return { success: false, error: 'Token scaduto' }
+    }
+    const salt = generateSalt()
+    const passwordHash = await hashPassword(newPassword, salt)
+    await executeSql(
+      'UPDATE users SET password_hash = ?, updated_at = ? WHERE email = ?',
+      [salt + ':' + passwordHash, new Date().toISOString(), email]
+    )
+    await executeSql('DELETE FROM password_resets WHERE email = ?', [email])
+    return { success: true }
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Unknown error'
+    return { success: false, error: msg }
+  }
+}

@@ -13,7 +13,7 @@ import { computeTarget, describeSwRule } from '../shared/userProfile.ts'
 import type { SwRule } from '../shared/userProfile.ts'
 import { loadSession } from '../shared/tursoAuth.ts'
 import { save } from './savedWeeks.ts'
-import { savePlanning, fetchEmployeePlan } from '../shared/planBackend.ts'
+import { savePlanning, fetchEmployeePlan, deletePlanning } from '../shared/planBackend.ts'
 import { getCurrentWeekStart, normalizeToMonday, formatLocalDate } from './teamWatcher.ts'
 import UserBadge from './UserBadge.tsx'
 
@@ -208,21 +208,11 @@ export default function SmartWorkingApp() {
     setDeleteMsg(null)
 
     try {
-      // Salva un piano vuoto (tutti free) per sovrascrivere
-      const emptyWeek: WeekPlan = ['free', 'free', 'free', 'free', 'free']
-      const result = await savePlanning({
-        employeeId: resourceNo,
-        employeeName: displayName,
-        department: 'LABS',
-        locationCode: sedeCode,
-        weekStart: normalizeToMonday(weekStart),
-        week: emptyWeek,
-        swDaysRequested: 0,
-      })
+      const result = await deletePlanning(resourceNo, normalizeToMonday(weekStart))
 
       if (result.success) {
         setExistingPlan(null)
-        setDayStates(emptyWeek)
+        setDayStates(['free', 'free', 'free', 'free', 'free'])
         setSelectedPerm(null)
         setDeleteMsg({ type: 'success', text: 'Pianificazione cancellata!' })
       } else {

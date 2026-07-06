@@ -12,8 +12,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { getTeamView, computeOfficeOverlaps, LOCATIONS } from './teamView.ts'
 import type { TeamViewResult, OfficeOverlaps } from './teamView.ts'
-import { createTeamWatcher, getCurrentWeekStart, formatLocalDate } from './teamWatcher.ts'
+import { createTeamWatcher, getCurrentWeekStart, formatLocalDate, normalizeToMonday } from './teamWatcher.ts'
 import type { TeamWatcher } from './teamWatcher.ts'
+import { deletePlanning } from '../shared/planBackend.ts'
 
 const DAY_LABELS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven'] as const
 const DAY_LABELS_FULL = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì'] as const
@@ -37,6 +38,8 @@ export default function TeamViewPage() {
   const [locationFilter, setLocationFilter] = useState<string>('') // '' = sede utente
   const [watcher, setWatcher] = useState<TeamWatcher | null>(null)
   const [watchedIds, setWatchedIds] = useState<string[]>([])
+  const [deleting, setDeleting] = useState(false)
+  const [deleteMsg, setDeleteMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   // Carica dati team
   const loadTeamData = useCallback(async () => {
@@ -83,6 +86,31 @@ export default function TeamViewPage() {
       watcher.addWatched(employeeId)
     }
     setWatchedIds(watcher.getWatchedIds())
+  }
+
+  // Cancella la propria pianificazione
+  const handleDelete = async () => {
+    if (!teamData?.myPlan) return
+    if (!confirm('Cancellare la tua pianificazione per questa settimana? Il team non la vedrà più.')) return
+
+    setDeleting(true)
+    setDeleteMsg(null)
+
+    try {
+      const result = await deletePlanning(teamData.myPlan.employeeId, normalizeToMonday(weekStart))
+      if (result.success) {
+        setDeleteMsg({ type: 'success', text: 'Pianificazione cancellata!' })
+        // Ricarica i dati del team
+        await loadTeamData()
+      } else {
+        setDeleteMsg({ type: 'error', text: result.error || 'Errore durante la cancellazione' })
+      }
+    } catch {
+      setDeleteMsg({ type: 'error', text: 'Errore di connessione' })
+    } finally {
+      setDeleting(false)
+      setTimeout(() => setDeleteMsg(null), 4000)
+    }
   }
 
   // Formatta data
@@ -170,6 +198,9 @@ export default function TeamViewPage() {
               overlaps={overlaps}
               isWatched={false}
               onToggleWatch={undefined}
+              onDelete={handleDelete}
+              deleting={deleting}
+              deleteMsg={deleteMsg}
             />
           ) : (
             <div className="member-card member-card-self member-card-empty">
@@ -319,9 +350,12 @@ interface MemberCardProps {
   overlaps: OfficeOverlaps
   isWatched: boolean
   onToggleWatch: (() => void) | undefined
+  onDelete?: () => void
+  deleting?: boolean
+  deleteMsg?: { type: 'success' | 'error'; text: string } | null
 }
 
-function MemberCard({ member, isSelf, overlaps, isWatched, onToggleWatch }: MemberCardProps) {
+function MemberCard({ member, isSelf, overlaps, isWatched, onToggleWatch, onDelete, deleting, deleteMsg }: MemberCardProps) {
   const swCount = member.week.filter(s => s === 'sw').length
   const officeCount = member.week.filter(s => s === 'office').length
 
@@ -367,7 +401,7 @@ function MemberCard({ member, isSelf, overlaps, isWatched, onToggleWatch }: Memb
         })}
       </div>
 
-      {/* Footer: tasto Segui */}
+      {/* Footer: tasto Segui (colleghi) o Cancella (self) */}
       {!isSelf && onToggleWatch && (
         <div className="member-footer">
           <button
@@ -375,6 +409,23 @@ function MemberCard({ member, isSelf, overlaps, isWatched, onToggleWatch }: Memb
             className={`watch-btn ${isWatched ? 'watching' : ''}`}
           >
             {isWatched ? '🔔 Seguito' : '🔔 Segui'}
+          </button>
+        </div>
+      )}
+      {isSelf && onDelete && (
+        <div className="member-footer">
+          {deleteMsg && (
+            <p className="text-xs mb-1" style={{ color: deleteMsg.type === 'success' ? 'var(--text-green)' : 'var(--text-red)' }}>
+              {deleteMsg.text}
+            </p>
+          )}
+          <button
+            onClick={onDelete}
+            disabled={deleting}
+            className="watch-btn"
+            style={{ color: 'var(--text-red)', borderColor: 'var(--text-red)' }}
+          >
+            {deleting ? '⏳...' : '🗑️ Cancella pianificazione'}
           </button>
         </div>
       )}

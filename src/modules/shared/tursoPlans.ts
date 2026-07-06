@@ -106,6 +106,16 @@ export async function fetchEmployeePlan(userId: string, weekStart: string): Prom
   }
 }
 
+export async function deletePlanning(userId: string, weekStart: string): Promise<SaveResult> {
+  try {
+    await executeSql('DELETE FROM plans WHERE user_id = ? AND week_start = ?', [userId, weekStart])
+    return { success: true, entryId: userId + '-' + weekStart }
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Unknown error'
+    return { success: false, error: msg }
+  }
+}
+
 export async function savePlanning(planning: {
   employeeId: string; employeeName: string; department: string; locationCode: string
   weekStart: string; week: WeekPlan; swDaysRequested: number

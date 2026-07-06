@@ -113,6 +113,30 @@ export async function fetchEmployeePlan(employeeId: string, weekStart: string): 
   return allPlans.find(p => p.employeeId === employeeId) || null
 }
 
+export async function deletePlanning(employeeId: string, weekStart: string): Promise<SaveResult> {
+  if (APP_CONFIG.features.tursoBackend) {
+    const { deletePlanning: tursoDelete } = await import('./tursoPlans.ts')
+    return tursoDelete(employeeId, weekStart)
+  }
+  if (APP_CONFIG.features.githubBackend) {
+    const { deletePlanning: ghDelete } = await import('./githubPlans.ts')
+    return ghDelete(employeeId, weekStart)
+  }
+  // localStorage fallback
+  try {
+    const plans = loadLocalPlans()
+    const idx = plans.findIndex(p => p.employeeId === employeeId && p.weekStart === weekStart)
+    if (idx >= 0) {
+      plans.splice(idx, 1)
+      saveLocalPlans(plans)
+    }
+    return { success: true, entryId: employeeId + '-' + weekStart }
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Errore sconosciuto'
+    return { success: false, error: msg }
+  }
+}
+
 export async function savePlanning(planning: {
   employeeId: string; employeeName: string; department: string; locationCode: string
   weekStart: string; week: WeekPlan; swDaysRequested: number

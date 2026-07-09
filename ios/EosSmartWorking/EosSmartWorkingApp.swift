@@ -7,6 +7,8 @@ struct EosSmartWorkingApp: App {
     var body: some Scene {
         WindowGroup {
             ZStack {
+                DynamicPremiumBackground()
+                
                 if !isLoggedIn {
                     AuthView(onLoginSuccess: {
                         withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {

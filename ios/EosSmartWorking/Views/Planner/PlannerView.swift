@@ -8,19 +8,10 @@ struct PlannerView: View {
     let dayLabels = ["Lun", "Mar", "Mer", "Gio", "Ven"]
     
     var body: some View {
-        ScrollView {
+        ZStack(alignment: .top) {
+            ScrollView(showsIndicators: false) {
                 VStack(spacing: 16) {
-                    // Header
-                    VStack(spacing: 4) {
-                        Text("Smart Working")
-                            .font(.largeTitle.weight(.semibold))
-                        Text("Configura i vincoli e scegli la tua settimana")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                        Text("\(vm.displayName) · \(vm.locationCode)")
-                            .font(.caption)
-                            .foregroundStyle(.green)
-                    }
+                    Spacer().frame(height: 64) // Spacer per la barra di navigazione
                     
                     // Card principale
                     VStack(spacing: 16) {
@@ -117,7 +108,7 @@ struct PlannerView: View {
                                 Text(String(format: "%.1f", target.targetSW))
                                     .font(.system(size: 36, weight: .bold))
                                     .foregroundStyle(.white)
-                                Text("massimo").font(.caption2).foregroundStyle(.white.opacity(0.4))
+                                  Text("massimo").font(.caption2).foregroundStyle(.white.opacity(0.4))
                             }
                             .frame(maxWidth: .infinity)
                             
@@ -248,6 +239,17 @@ struct PlannerView: View {
                     .padding(20)
                     .background(.regularMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: 28))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 28)
+                            .stroke(
+                                LinearGradient(
+                                    colors: [Color.white.opacity(0.3), Color.white.opacity(0.08)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1.5
+                            )
+                    )
                     
                     // Link navigazione
                     HStack(spacing: 16) {
@@ -262,8 +264,16 @@ struct PlannerView: View {
                     Text("SmartWorkingDays · IgelDev")
                         .font(.caption2)
                         .foregroundStyle(.secondary.opacity(0.5))
+                    
+                    Spacer().frame(height: 100) // Spacer per evitare la tab bar fluttuante
                 }
                 .padding(16)
+            }
+            
+            LiquidGlassNavigationBar(
+                title: "Pianifica",
+                subtitle: "\(vm.displayName) · \(vm.locationCode.uppercased())"
+            )
         }
     }
 }
@@ -288,7 +298,7 @@ struct DayPillView: View {
     
     var bgColor: Color {
         switch state {
-        case .free: return .quaternary
+        case .free: return Color(uiColor: .quaternarySystemFill)
         case .sw: return .green.opacity(0.15)
         case .office: return .blue.opacity(0.15)
         case .absent: return .red.opacity(0.15)
@@ -336,7 +346,7 @@ struct PermutationRowView: View {
             }
         }
         .padding(10)
-        .background(isSelected ? .green.opacity(0.1) : .quaternary.opacity(0.5))
+        .background(isSelected ? Color.green.opacity(0.1) : Color(uiColor: .quaternarySystemFill).opacity(0.5))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(
             RoundedRectangle(cornerRadius: 12)

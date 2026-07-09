@@ -40,7 +40,8 @@ enum SmartWorkingEngine {
     
     static func generateAllPermutations(dayStates: WeekPlan, rule: SwRule) -> [Permutation] {
         let workedCount = dayStates.filter { $0 != .absent }.count
-        let (targetSW, _) = computeTarget(rule: rule, workedCount: workedCount)
+        let targetResult = computeTarget(rule: rule, workedCount: workedCount)
+        let targetSW = targetResult.targetSW
         
         let freeIndices = dayStates.enumerated().compactMap { $0.element == .free ? $0.offset : nil }
         var fixedSW = 0.0

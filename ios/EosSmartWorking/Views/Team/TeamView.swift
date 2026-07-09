@@ -7,10 +7,12 @@ struct TeamView: View {
     
     let dayLabels = ["Lun", "Mar", "Mer", "Gio", "Ven"]
     let dayLabelsFull = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì"]
-    
     var body: some View {
-        ScrollView {
+        ZStack(alignment: .top) {
+            ScrollView(showsIndicators: false) {
                 VStack(spacing: 16) {
+                    Spacer().frame(height: 64) // Spacer per la barra di navigazione
+                    
                     // Controlli
                     HStack {
                         // Navigazione settimana
@@ -123,8 +125,16 @@ struct TeamView: View {
                         }
                     }
                     .font(.caption)
+                    
+                    Spacer().frame(height: 100) // Spacer per evitare la tab bar fluttuante
                 }
                 .padding(16)
+            }
+            
+            LiquidGlassNavigationBar(
+                title: "Team",
+                subtitle: vm.locationFilter.isEmpty ? "La mia sede" : (vm.locationFilter == "ALL" ? "Tutte le sedi" : "Sede: \(vm.locationFilter.capitalized)")
+            )
         }
     }
 }
@@ -250,8 +260,10 @@ struct OfficeOverlapSectionView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
-                ForEach(officeDays, id: \.self) { dayIdx in
-                    let inOffice = colleagues.filter { $0.week.indices.contains(dayIdx) && $0.week[dayIdx] == .office }
+                ForEach(officeDays, id: \.self) { (dayIdx: Int) in
+                    let inOffice = colleagues.filter { colleague in
+                        colleague.week.indices.contains(dayIdx) && colleague.week[dayIdx] == .office
+                    }
                     
                     HStack(spacing: 12) {
                         VStack {
@@ -279,7 +291,7 @@ struct OfficeOverlapSectionView: View {
                     }
                     .padding(12)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(inOffice.isEmpty ? .quaternary : .blue.opacity(0.08))
+                    .background(inOffice.isEmpty ? Color(uiColor: .quaternarySystemFill) : Color.blue.opacity(0.08))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }

@@ -5,24 +5,17 @@ struct SettingsView: View {
     @StateObject private var vm = SettingsViewModel()
     
     var body: some View {
-        ScrollView {
+        ZStack(alignment: .top) {
+            ScrollView(showsIndicators: false) {
                 if vm.loading {
-                    ProgressView("Caricamento...")
-                        .padding(32)
+                    VStack {
+                        Spacer().frame(height: 100)
+                        ProgressView("Caricamento...")
+                            .padding(32)
+                    }
                 } else {
                     VStack(spacing: 16) {
-                        // Header
-                        VStack(spacing: 8) {
-                            Image(systemName: "gearshape.fill")
-                                .font(.system(size: 40))
-                                .foregroundStyle(.green)
-                            Text("Impostazioni")
-                                .font(.title.weight(.semibold))
-                            Text("Il tuo profilo è salvato nel database e condiviso tra tutti i dispositivi")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.center)
-                        }
+                        Spacer().frame(height: 64) // Spacer per la barra di navigazione
                         
                         // Card
                         VStack(spacing: 16) {
@@ -165,9 +158,28 @@ struct SettingsView: View {
                         .padding(24)
                         .background(.regularMaterial)
                         .clipShape(RoundedRectangle(cornerRadius: 28))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 28)
+                                .stroke(
+                                    LinearGradient(
+                                        colors: [Color.white.opacity(0.3), Color.white.opacity(0.08)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 1.5
+                                )
+                        )
+                        
+                        Spacer().frame(height: 100) // Spacer per evitare la tab bar fluttuante
                     }
                     .padding(16)
+                }
             }
+            
+            LiquidGlassNavigationBar(
+                title: "Impostazioni",
+                subtitle: "Profilo e sincronizzazione"
+            )
         }
     }
 }

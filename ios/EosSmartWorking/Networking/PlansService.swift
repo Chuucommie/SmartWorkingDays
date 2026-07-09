@@ -3,8 +3,8 @@ import Foundation
 // MARK: - Plans Service
 @MainActor
 class PlansService: ObservableObject {
-    private let tursoUrl = "https://smartworking-chuucommie.aws-eu-west-1.turso.io"
-    private let tursoToken = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODM1ODc2NTgsImlkIjoiMDE5ZjFlM2MtZGIwMS03MDFhLTkwOGItMGYzMTliYjJlOWJhIiwia2lkIjoiRjVoR29MMUJuQmI0di1GdDhjcVVNRjkydjB6Nmo3cERPMkpkZkt4VnlocyIsInJpZCI6ImIxYTNiMzFlLWUwMDAtNDJjMS1hNTg4LTljMGJiOWVmZGUxZiJ9.0LK4Lm2oud2yS0agFVoCX5Wv3UMBQGKCWXSBP-xqAjmG1SJ5YN4FmNA9ECwxg99i57-scEiSMPcobzqEcFR0Bw"
+    private let tursoUrl = Secrets.tursoUrl
+    private let tursoToken = Secrets.tursoToken
     private lazy var client = TursoClient(url: tursoUrl, token: tursoToken)
     
     func savePlanning(employeeId: String, employeeName: String, department: String, locationCode: String, weekStart: String, week: WeekPlan, swDaysRequested: Int) async -> OperationResult {

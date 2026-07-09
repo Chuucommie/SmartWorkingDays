@@ -38,3 +38,7 @@ fastlane/test_output
 
 # macOS
 .DS_Store
+
+# EOS Secrets — NON committare!
+ios/Config/secret.xcconfig
+ios/Config/Secrets.plist

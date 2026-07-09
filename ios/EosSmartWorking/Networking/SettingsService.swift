@@ -4,7 +4,7 @@ import Foundation
 @MainActor
 class SettingsService: ObservableObject {
     private let tursoUrl = "https://smartworking-chuucommie.aws-eu-west-1.turso.io"
-    private let tursoToken = ""
+    private let tursoToken = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODM1ODc2NTgsImlkIjoiMDE5ZjFlM2MtZGIwMS03MDFhLTkwOGItMGYzMTliYjJlOWJhIiwia2lkIjoiRjVoR29MMUJuQmI0di1GdDhjcVVNRjkydjB6Nmo3cERPMkpkZkt4VnlocyIsInJpZCI6ImIxYTNiMzFlLWUwMDAtNDJjMS1hNTg4LTljMGJiOWVmZGUxZiJ9.0LK4Lm2oud2yS0agFVoCX5Wv3UMBQGKCWXSBP-xqAjmG1SJ5YN4FmNA9ECwxg99i57-scEiSMPcobzqEcFR0Bw"
     private lazy var client = TursoClient(url: tursoUrl, token: tursoToken)
     
     func loadUserProfile(userId: String) async -> UserProfile? {

@@ -1,0 +1,484 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		7F85FF4B1B0C906CB350B244 /* EosSmartWorking.app in Products */ = {isa = PBXBuildFile; fileRef = A97C29AD63741CF438998CE6 /* EosSmartWorking.app */; };
+		7123CE1127E9A58F98635984 /* EosSmartWorkingApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84C56272F89618BA292F6204 /* EosSmartWorkingApp.swift */; };
+		FD43C27BB8563FCB0B6899BA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAFCBD2D9CC330A4F74DBB2F /* ContentView.swift */; };
+		FB8C544798A1D4AD3812D51F /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = D850F0984B84F41664910D23 /* Models.swift */; };
+		8FC3B5C648337C62B41EB177 /* SmartWorkingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1146D495068E8577F2D3B5E /* SmartWorkingEngine.swift */; };
+		9E767F9A6EE39F62886A8AF3 /* TursoClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76E0D16C1F211EBD4D3D8928 /* TursoClient.swift */; };
+		1CEDE78AF4840F53C3BD9E06 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 323112014259E4CD5E229147 /* AuthService.swift */; };
+		0C2AE34BFEA5B4CF3EA473BC /* PlansService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1053CFC4660E40BA3DB5CFBD /* PlansService.swift */; };
+		B4471500E6F744BADD00E6C8 /* SettingsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0E1AE0F4A0B531ED5DCB9E6 /* SettingsService.swift */; };
+		F32CE157EC0286364ADD1121 /* EmailService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5584218D9F0C79E72386371 /* EmailService.swift */; };
+		74DEDF593CDC7D7298EAB587 /* DateUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE73A96ECAD7F0D989C03503 /* DateUtils.swift */; };
+		495EA004CE59C2C4CE2A89AB /* Crypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77BF4CED1D848A1ADB972C30 /* Crypto.swift */; };
+		09D0A0281E2D73E568DD8C72 /* Secrets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C34D7600D05BACFAF39E7D2 /* Secrets.swift */; };
+		05E1A95B3B02627E76639460 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC8587589D9C5FF65700ED1C /* AuthViewModel.swift */; };
+		F0C29BCCEF2A48C5A6BDB30C /* PlannerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 280362BA0872AF372B5DC3BD /* PlannerViewModel.swift */; };
+		D08D2BF45AD01023660E2559 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FD870E473DF9880621B7C28 /* SettingsViewModel.swift */; };
+		C5FFE77B67039871D3BF6FB2 /* TeamViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95D7A5EC82D106C0A124A286 /* TeamViewModel.swift */; };
+		033A098FA6F8CA85CF4E38B5 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CF6A0A4AD611C6DE0885BFE /* AuthView.swift */; };
+		9D21BD1676DF1C329B44F0EA /* PlannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99BBD392CECF11B567C9CF3D /* PlannerView.swift */; };
+		A48B23518C0997947527FB5A /* TeamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9D73CADA4582B7487B8D97 /* TeamView.swift */; };
+		E9F7043CF6B6C21110740CB0 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFF5A1B784EAE19B21216DC9 /* SettingsView.swift */; };
+		049AB9E963D2C12020E939EA /* LiquidGlassTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25BE624CE4489DDCADDAD2D5 /* LiquidGlassTabBar.swift */; };
+		45AB3B54C86F71ADC49D67FB /* Secrets.plist in Resources */ = {isa = PBXBuildFile; fileRef = 61A56379449362760AE54F34 /* Secrets.plist */; };
+		04A7814E4EEC70DE7D6C41B1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8D562B3E40B6C9EC53F38F07 /* Assets.xcassets */; };
+		0482192C5A7F4D3347668FAB /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 0BF41A38498D11C4801A6BC8 /* LaunchScreen.storyboard */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A97C29AD63741CF438998CE6 /* EosSmartWorking.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EosSmartWorking.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		84C56272F89618BA292F6204 /* EosSmartWorkingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EosSmartWorkingApp.swift"; sourceTree = "<group>"; };
+		DAFCBD2D9CC330A4F74DBB2F /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ContentView.swift"; sourceTree = "<group>"; };
+		D850F0984B84F41664910D23 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models.swift"; sourceTree = "<group>"; };
+		F1146D495068E8577F2D3B5E /* SmartWorkingEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SmartWorkingEngine.swift"; sourceTree = "<group>"; };
+		76E0D16C1F211EBD4D3D8928 /* TursoClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TursoClient.swift"; sourceTree = "<group>"; };
+		323112014259E4CD5E229147 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AuthService.swift"; sourceTree = "<group>"; };
+		1053CFC4660E40BA3DB5CFBD /* PlansService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PlansService.swift"; sourceTree = "<group>"; };
+		E0E1AE0F4A0B531ED5DCB9E6 /* SettingsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingsService.swift"; sourceTree = "<group>"; };
+		D5584218D9F0C79E72386371 /* EmailService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EmailService.swift"; sourceTree = "<group>"; };
+		AE73A96ECAD7F0D989C03503 /* DateUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DateUtils.swift"; sourceTree = "<group>"; };
+		77BF4CED1D848A1ADB972C30 /* Crypto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Crypto.swift"; sourceTree = "<group>"; };
+		0C34D7600D05BACFAF39E7D2 /* Secrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Secrets.swift"; sourceTree = "<group>"; };
+		FC8587589D9C5FF65700ED1C /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AuthViewModel.swift"; sourceTree = "<group>"; };
+		280362BA0872AF372B5DC3BD /* PlannerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PlannerViewModel.swift"; sourceTree = "<group>"; };
+		6FD870E473DF9880621B7C28 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingsViewModel.swift"; sourceTree = "<group>"; };
+		95D7A5EC82D106C0A124A286 /* TeamViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TeamViewModel.swift"; sourceTree = "<group>"; };
+		5CF6A0A4AD611C6DE0885BFE /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AuthView.swift"; sourceTree = "<group>"; };
+		99BBD392CECF11B567C9CF3D /* PlannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PlannerView.swift"; sourceTree = "<group>"; };
+		CC9D73CADA4582B7487B8D97 /* TeamView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TeamView.swift"; sourceTree = "<group>"; };
+		FFF5A1B784EAE19B21216DC9 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingsView.swift"; sourceTree = "<group>"; };
+		25BE624CE4489DDCADDAD2D5 /* LiquidGlassTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LiquidGlassTabBar.swift"; sourceTree = "<group>"; };
+		4D815DD2BB41FEA1DA45DC65 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		61A56379449362760AE54F34 /* Secrets.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Secrets.plist; sourceTree = "<group>"; };
+		8D562B3E40B6C9EC53F38F07 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AF0AD9D9AE684AD30BE7128A /* secret.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Config/secret.xcconfig"; sourceTree = "<group>"; };
+		0BF41A38498D11C4801A6BC8 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		E684EE7918FB717B080CF3F5 /* EosSmartWorking */ = {
+			isa = PBXGroup;
+			children = (
+				9CF43B31E8845D861542A38E /* Models */,
+				D9902DBA85A52183C7DB94F3 /* Logic */,
+				3349847180EFB5839BB28BC0 /* Networking */,
+				94EC979C78A1C9E483FAC308 /* Utilities */,
+				420CEB417186B52ECF642348 /* ViewModels */,
+				C454586A1F4E28C340BDC1AD /* Views */,
+				84C56272F89618BA292F6204 /* EosSmartWorkingApp.swift */,
+				DAFCBD2D9CC330A4F74DBB2F /* ContentView.swift */,
+				4D815DD2BB41FEA1DA45DC65 /* Info.plist */,
+				61A56379449362760AE54F34 /* Secrets.plist */,
+				8D562B3E40B6C9EC53F38F07 /* Assets.xcassets */,
+				0BF41A38498D11C4801A6BC8 /* LaunchScreen.storyboard */,
+			);
+			path = EosSmartWorking;
+			sourceTree = "<group>";
+		};
+
+		C454586A1F4E28C340BDC1AD /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				0629F24148029F2AB14A4EF0 /* Auth */,
+				2EA67BB37F218DEC43490886 /* Planner */,
+				7A6F802C3FC4FCCFDF4D53CD /* Team */,
+				F0E6DDF03F2622020D7F084A /* Settings */,
+				25BE624CE4489DDCADDAD2D5 /* LiquidGlassTabBar.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+
+		9CF43B31E8845D861542A38E /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				D850F0984B84F41664910D23 /* Models.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+
+		D9902DBA85A52183C7DB94F3 /* Logic */ = {
+			isa = PBXGroup;
+			children = (
+				F1146D495068E8577F2D3B5E /* SmartWorkingEngine.swift */,
+			);
+			path = Logic;
+			sourceTree = "<group>";
+		};
+
+		3349847180EFB5839BB28BC0 /* Networking */ = {
+			isa = PBXGroup;
+			children = (
+				76E0D16C1F211EBD4D3D8928 /* TursoClient.swift */,
+				323112014259E4CD5E229147 /* AuthService.swift */,
+				1053CFC4660E40BA3DB5CFBD /* PlansService.swift */,
+				E0E1AE0F4A0B531ED5DCB9E6 /* SettingsService.swift */,
+				D5584218D9F0C79E72386371 /* EmailService.swift */,
+			);
+			path = Networking;
+			sourceTree = "<group>";
+		};
+
+		94EC979C78A1C9E483FAC308 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				AE73A96ECAD7F0D989C03503 /* DateUtils.swift */,
+				77BF4CED1D848A1ADB972C30 /* Crypto.swift */,
+				0C34D7600D05BACFAF39E7D2 /* Secrets.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+
+		420CEB417186B52ECF642348 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				FC8587589D9C5FF65700ED1C /* AuthViewModel.swift */,
+				280362BA0872AF372B5DC3BD /* PlannerViewModel.swift */,
+				6FD870E473DF9880621B7C28 /* SettingsViewModel.swift */,
+				95D7A5EC82D106C0A124A286 /* TeamViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+
+		0629F24148029F2AB14A4EF0 /* Views/Auth */ = {
+			isa = PBXGroup;
+			children = (
+				5CF6A0A4AD611C6DE0885BFE /* AuthView.swift */,
+			);
+			path = Views/Auth;
+			sourceTree = "<group>";
+		};
+
+		2EA67BB37F218DEC43490886 /* Views/Planner */ = {
+			isa = PBXGroup;
+			children = (
+				99BBD392CECF11B567C9CF3D /* PlannerView.swift */,
+			);
+			path = Views/Planner;
+			sourceTree = "<group>";
+		};
+
+		7A6F802C3FC4FCCFDF4D53CD /* Views/Team */ = {
+			isa = PBXGroup;
+			children = (
+				CC9D73CADA4582B7487B8D97 /* TeamView.swift */,
+			);
+			path = Views/Team;
+			sourceTree = "<group>";
+		};
+
+		F0E6DDF03F2622020D7F084A /* Views/Settings */ = {
+			isa = PBXGroup;
+			children = (
+				FFF5A1B784EAE19B21216DC9 /* SettingsView.swift */,
+			);
+			path = Views/Settings;
+			sourceTree = "<group>";
+		};
+
+		BF7A2D27A78D590BDEF15AF2 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A97C29AD63741CF438998CE6 /* EosSmartWorking.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+
+		5928955287B8089ED2177128 /* = {
+			isa = PBXGroup;
+			children = (
+				E684EE7918FB717B080CF3F5 /* EosSmartWorking */,
+				BF7A2D27A78D590BDEF15AF2 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		42AEFBAE01D2DFD981F7DA7D /* EosSmartWorking */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AFD04581184175117C78D9AC;
+			buildPhases = (
+				E7209FB05162B7572F88D05E /* Sources */,
+				66F8606E9F0A136E2228EBCB /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = EosSmartWorking;
+			productName = EosSmartWorking;
+			productReference = A97C29AD63741CF438998CE6 /* EosSmartWorking.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		46F86FAA6BBF9AC94A7E4595 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+			};
+			buildConfigurationList = 022E0F2E8ECAC35F5510DD6F;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = "it";
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				"it",
+				Base,
+			);
+			mainGroup = 5928955287B8089ED2177128;
+			productRefGroup = BF7A2D27A78D590BDEF15AF2 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				42AEFBAE01D2DFD981F7DA7D /* EosSmartWorking */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		66F8606E9F0A136E2228EBCB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				45AB3B54C86F71ADC49D67FB /* Secrets.plist in Resources */,
+				04A7814E4EEC70DE7D6C41B1 /* Assets.xcassets in Resources */,
+				0482192C5A7F4D3347668FAB /* LaunchScreen.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		E7209FB05162B7572F88D05E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7123CE1127E9A58F98635984 /* EosSmartWorkingApp.swift in Sources */,
+				FD43C27BB8563FCB0B6899BA /* ContentView.swift in Sources */,
+				FB8C544798A1D4AD3812D51F /* Models.swift in Sources */,
+				8FC3B5C648337C62B41EB177 /* SmartWorkingEngine.swift in Sources */,
+				9E767F9A6EE39F62886A8AF3 /* TursoClient.swift in Sources */,
+				1CEDE78AF4840F53C3BD9E06 /* AuthService.swift in Sources */,
+				0C2AE34BFEA5B4CF3EA473BC /* PlansService.swift in Sources */,
+				B4471500E6F744BADD00E6C8 /* SettingsService.swift in Sources */,
+				F32CE157EC0286364ADD1121 /* EmailService.swift in Sources */,
+				74DEDF593CDC7D7298EAB587 /* DateUtils.swift in Sources */,
+				495EA004CE59C2C4CE2A89AB /* Crypto.swift in Sources */,
+				09D0A0281E2D73E568DD8C72 /* Secrets.swift in Sources */,
+				05E1A95B3B02627E76639460 /* AuthViewModel.swift in Sources */,
+				F0C29BCCEF2A48C5A6BDB30C /* PlannerViewModel.swift in Sources */,
+				D08D2BF45AD01023660E2559 /* SettingsViewModel.swift in Sources */,
+				C5FFE77B67039871D3BF6FB2 /* TeamViewModel.swift in Sources */,
+				033A098FA6F8CA85CF4E38B5 /* AuthView.swift in Sources */,
+				9D21BD1676DF1C329B44F0EA /* PlannerView.swift in Sources */,
+				A48B23518C0997947527FB5A /* TeamView.swift in Sources */,
+				E9F7043CF6B6C21110740CB0 /* SettingsView.swift in Sources */,
+				049AB9E963D2C12020E939EA /* LiquidGlassTabBar.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		AAEA14000790462964F89243 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADERS = YES;
+				CLANG_WARN_RANGE_LOOP = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGCHECK = YES;
+				ENABLE_TESTABILITY = YES;
+				CODE_SIGNING_ALLOWED = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_WARN_64_TO_32_BIT = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = -Onone;
+			};
+			name = Debug;
+		};
+
+		555260E2B9879D6B41B034DF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADERS = YES;
+				CLANG_WARN_RANGE_LOOP = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dso";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGCHECK = YES;
+				CODE_SIGNING_ALLOWED = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+
+		386F21FB6CCFBF3FBFDA1CC3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = AF0AD9D9AE684AD30BE7128A /* secret.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGNING_ALLOWED = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = EosSmartWorking/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "EOS Smart Working";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.eos.smartworking;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1";
+			};
+			name = Debug;
+		};
+
+		99EA497894306B9F39FE5709 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = AF0AD9D9AE684AD30BE7128A /* secret.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGNING_ALLOWED = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = EosSmartWorking/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "EOS Smart Working";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.eos.smartworking;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		022E0F2E8ECAC35F5510DD6F /* Build configuration list for PBXProject */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AAEA14000790462964F89243 /* Debug */,
+				555260E2B9879D6B41B034DF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+
+		AFD04581184175117C78D9AC /* Build configuration list for PBXNativeTarget */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				386F21FB6CCFBF3FBFDA1CC3 /* Debug */,
+				99EA497894306B9F39FE5709 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+	};
+	rootObject = 46F86FAA6BBF9AC94A7E4595 /* Project object */;
+}
